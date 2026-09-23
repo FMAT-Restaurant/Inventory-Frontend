@@ -1,18 +1,40 @@
-# React + Vite
+# 🔄 Flujo de trabajo recomendado en equipo
+### Antes de empezar a trabajar cada día
+### Trae los cambios más recientes del remoto:
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+`bash`\
+`git pull origin main`
 
-Currently, two official plugins are available:
+Esto asegura que tu copia local esté actualizada con lo que otros subieron.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+### Mientras trabajas en tus cambios
+### Haz commits frecuentes y claros:
 
-## React Compiler
+`bash`\
+`git add .`\
+`git commit -m "Agrego componente de login"`
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Mantén tus commits pequeños y descriptivos.
 
-## Expanding the ESLint configuration
+### Antes de hacer push
+### Vuelve a sincronizar con el remoto para evitar conflictos:
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+`bash`\
+`git pull --rebase origin main`\
 
-oli
+### Si hay conflictos, resuélvelos en tus archivos, luego:
+
+`bash`\
+`git add .`\
+`git rebase --continue`
+
+### Subir tus cambios al remoto
+### Cuando tu rama local esté lista:
+
+`bash`\
+`git push origin main`
+
+Revisar en GitHub
+Confirma que tu commit aparece en la pestaña Commits.
+
+Si hay workflows (como deploy.yml), revisa en Actions que se ejecuten correctamente.
