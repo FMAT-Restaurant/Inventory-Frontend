@@ -4,5 +4,5 @@ import { defineConfig } from 'vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: '/Frontend_Inventario/', //Nombre del repositorio
+  base: '/Inventory-Frontend/', //Nombre del repositorio
 })
