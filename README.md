@@ -1,40 +1,44 @@
-# 🔄 Flujo de trabajo recomendado en equipo
-### Antes de empezar a trabajar cada día
-### Trae los cambios más recientes del remoto:
+# Frontend Inventario
 
-`bash`\
-`git pull origin main`
+Frontend para el microservicio de Inventario del sistema de restaurante.
 
-Esto asegura que tu copia local esté actualizada con lo que otros subieron.
+## Stack
+- React 19
+- TypeScript
+- Vite
+- Tailwind CSS v4
+- React Router
 
-### Mientras trabajas en tus cambios
-### Haz commits frecuentes y claros:
+## Cómo clonar y correr
 
-`bash`\
-`git add .`\
-`git commit -m "Agrego componente de login"`
+1. Clonar el repositorio.
+2. Instalar dependencias:
+   ```bash
+   npm install
+   ```
+3. Copiar el archivo `.env.example` a `.env` y ajustar si es necesario:
+   ```bash
+   cp .env.example .env
+   ```
+4. Correr el servidor de desarrollo:
+   ```bash
+   npm run dev
+   ```
 
-Mantén tus commits pequeños y descriptivos.
+## Estructura de carpetas
 
-### Antes de hacer push
-### Vuelve a sincronizar con el remoto para evitar conflictos:
+- `src/types/`: Interfaces TypeScript
+- `src/services/`: Interfaz y servicios para comunicarse con el backend
+- `src/mocks/`: Datos de ejemplo locales
+- `src/components/`: Componentes reutilizables
+- `src/hooks/`: Hooks personalizados
+- `src/pages/`: Pantallas principales de la aplicación
+- `docs/tests/`: Pruebas y QA (Héctor)
 
-`bash`\
-`git pull --rebase origin main`\
+## Flujo de trabajo en equipo (Git)
 
-### Si hay conflictos, resuélvelos en tus archivos, luego:
-
-`bash`\
-`git add .`\
-`git rebase --continue`
-
-### Subir tus cambios al remoto
-### Cuando tu rama local esté lista:
-
-`bash`\
-`git push origin main`
-
-Revisar en GitHub
-Confirma que tu commit aparece en la pestaña Commits.
-
-Si hay workflows (como deploy.yml), revisa en Actions que se ejecuten correctamente.
+1. Antes de empezar, siempre hacer `git pull origin main`.
+2. Trabajar localmente y hacer commits frecuentes (`git add .` -> `git commit -m "..."`).
+3. Antes de subir, sincronizar nuevamente: `git pull --rebase origin main`.
+4. Si hay conflictos, resolverlos, luego `git add .` y `git rebase --continue`.
+5. Subir los cambios con `git push origin main`.
