@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { InventoryProvider } from './context/InventoryContext.jsx';
 import { Shell } from './components/layout/Shell.jsx';
+import { MainMenu } from './pages/MainMenu.jsx';
 import { InsumosPage } from './pages/InsumosPage.jsx';
 import { RecetasPage } from './pages/RecetasPage.jsx';
 import { MovimientosPage } from './pages/MovimientosPage.jsx';
 
 function MainApp() {
-  const [activeTab, setActiveTab] = useState('insumos');
+  const [activeTab, setActiveTab] = useState<'menu' | 'insumos' | 'recetas' | 'movimientos'>('menu');
 
   const pageTitles: Record<string, string> = {
+    menu: 'Inventario',
     insumos: 'Gestión de Insumos y Lotes',
     recetas: 'Catálogo de Recetas y Disponibilidad',
     movimientos: 'Movimientos de Almacén'
@@ -16,6 +18,8 @@ function MainApp() {
 
   const renderContent = () => {
     switch (activeTab) {
+      case 'menu':
+        return <MainMenu onSelectModule={(tab: 'insumos' | 'recetas' | 'movimientos') => setActiveTab(tab)} />;
       case 'insumos':
         return <InsumosPage />;
       case 'recetas':
@@ -29,10 +33,7 @@ function MainApp() {
 
   return (
     <Shell
-      activeTab={activeTab}
-      onTabChange={(tab: string) => {
-        setActiveTab(tab);
-      }}
+      onBackToMenu={activeTab !== 'menu' ? () => setActiveTab('menu') : undefined}
       pageTitle={pageTitles[activeTab] || 'Inventario'}
     >
       {renderContent()}
