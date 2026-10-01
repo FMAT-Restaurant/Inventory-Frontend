@@ -1,1 +1,256 @@
 @import "tailwindcss";
+
+/* ==========================================================================
+   DESIGN SYSTEM: FMAT-RESTAURANT v2.0
+   Regla 70 / 20 / 10
+   70% Canvas (#F8FAFC, #FFFFFF) | 20% Text/Border (#111827, #374151, #E5E7EB) | 10% Primary (#C2410C)
+   ========================================================================== */
+
+:root {
+  /* Paleta de Color */
+  --color-primary: #C2410C;
+  --color-primary-hover: #9A3412;
+  --color-accent: #F97316;
+  --color-primary-soft: #FFF7ED;
+
+  --color-ink: #111827;
+  --color-text: #374151;
+  --color-muted: #6B7280;
+  --color-border: #E5E7EB;
+  --color-canvas: #F8FAFC;
+  --color-surface: #FFFFFF;
+
+  /* Estados y Badges */
+  --color-success: #15803D;
+  --bg-success: #DCFCE7;
+  --color-warning: #B45309;
+  --bg-warning: #FEF3C7;
+  --color-danger: #DC2626;
+  --bg-danger: #FEE2E2;
+
+  /* Radios */
+  --radius-control: 8px;
+  --radius-card: 12px;
+  --radius-pill: 9999px;
+
+  /* Elevación / Sombras */
+  --shadow-flat: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-modal: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+
+  /* Tipografía */
+  --font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --h1-size: 28px;
+  --h1-line: 36px;
+  --h2-size: 22px;
+  --h2-line: 30px;
+  --h3-size: 18px;
+  --h3-line: 26px;
+  --body-size: 16px;
+  --body-line: 24px;
+  --small-size: 14px;
+  --small-line: 20px;
+  --caption-size: 12px;
+  --caption-line: 16px;
+
+  /* Control Heights */
+  --control-height: 40px;
+}
+
+@media (max-width: 768px) {
+  :root {
+    --control-height: 48px;
+    --h1-size: 24px;
+    --h1-line: 32px;
+  }
+}
+
+/* Reset y Base */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  font-family: var(--font-family);
+  font-size: var(--body-size);
+  line-height: var(--body-line);
+  color: var(--color-text);
+  background-color: var(--color-canvas);
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Tipografía */
+h1 {
+  font-size: var(--h1-size);
+  line-height: var(--h1-line);
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+h2 {
+  font-size: var(--h2-size);
+  line-height: var(--h2-line);
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+h3 {
+  font-size: var(--h3-size);
+  line-height: var(--h3-line);
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+p {
+  color: var(--color-text);
+}
+
+small {
+  font-size: var(--small-size);
+  line-height: var(--small-line);
+  color: var(--color-muted);
+}
+
+/* Layout Shell */
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+  background-color: var(--color-canvas);
+}
+
+.app-sidebar {
+  width: 240px;
+  background-color: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 40;
+  transition: width 0.2s ease;
+}
+
+.app-sidebar-collapsed {
+  width: 68px;
+}
+
+.app-main {
+  flex: 1;
+  margin-left: 240px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  transition: margin-left 0.2s ease;
+}
+
+.app-main-collapsed {
+  margin-left: 68px;
+}
+
+.app-header {
+  height: 72px;
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+.app-content {
+  padding: 32px;
+  flex: 1;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* Barra inferior móvil */
+.app-bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background-color: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  z-index: 50;
+  justify-content: space-around;
+  align-items: center;
+}
+
+/* Breakpoint Tablet (768px a 1199px) */
+@media (min-width: 768px) and (max-width: 1199px) {
+  .app-sidebar {
+    width: 68px;
+  }
+  .app-sidebar .nav-label,
+  .app-sidebar .sidebar-brand-title {
+    display: none;
+  }
+  .app-main {
+    margin-left: 68px;
+  }
+  .app-header {
+    padding: 0 24px;
+  }
+  .app-content {
+    padding: 24px;
+  }
+}
+
+/* Breakpoint Mobile (< 768px) */
+@media (max-width: 767px) {
+  .app-sidebar {
+    display: none;
+  }
+  .app-main {
+    margin-left: 0 !important;
+    padding-bottom: 72px; /* espacio para bottom nav */
+  }
+  .app-header {
+    padding: 0 16px;
+    height: 60px;
+  }
+  .app-content {
+    padding: 16px;
+  }
+  .app-bottom-nav {
+    display: flex;
+  }
+}
+
+/* Grids responsivos */
+.grid-responsive {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+
+@media (max-width: 1199px) {
+  .grid-responsive {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767px) {
+  .grid-responsive {
+    grid-template-columns: 1fr;
+  }
+}
