@@ -42,3 +42,6 @@ Frontend para el microservicio de Inventario del sistema de restaurante.
 3. Antes de subir, sincronizar nuevamente: `git pull --rebase origin main`.
 4. Si hay conflictos, resolverlos, luego `git add .` y `git rebase --continue`.
 5. Subir los cambios con `git push origin main`.
+
+## Code Quality
+This project uses SonarQube Cloud for static code analysis.
