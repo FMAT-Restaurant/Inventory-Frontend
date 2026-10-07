@@ -21,7 +21,12 @@ function resolveAppEnv(): AppEnv {
 }
 
 function resolveApiUrl(): string {
-  return (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
+  const url = import.meta.env.VITE_API_URL || '';
+  let end = url.length;
+  while (end > 0 && url[end - 1] === '/') {
+    end -= 1;
+  }
+  return url.slice(0, end);
 }
 
 function resolveUseMock(): boolean {
