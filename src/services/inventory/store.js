@@ -17,6 +17,8 @@ import {
 } from './businessRules.js';
 import { EstadoLote, EstadoReserva } from './types.js';
 
+let ingredientIdCounter = 0;
+
 class InventoryStore {
   constructor() {
     this.listeners = new Set();
@@ -145,7 +147,7 @@ class InventoryStore {
     }
 
     const nuevoIngrediente = {
-      id: `ing-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 1000)}`,
+      id: `ing-${Date.now().toString(36)}-${(ingredientIdCounter += 1).toString(36)}`,
       ...datosBase
     };
     this.ingredientes.push(nuevoIngrediente);
