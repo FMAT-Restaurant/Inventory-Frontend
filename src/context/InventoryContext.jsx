@@ -21,6 +21,37 @@ export function InventoryProvider({ children }) {
     setTimeout(() => setNotificacion(null), 5000);
   };
 
+  const guardarIngrediente = useCallback(async data => {
+    setCargando(true);
+    try {
+      const res = await mockService.guardarIngrediente(data);
+      mostrarMensaje(
+        'success',
+        data?.id ? `Ingrediente "${res.nombre}" actualizado.` : `Ingrediente "${res.nombre}" agregado al catálogo.`
+      );
+      return res;
+    } catch (err) {
+      mostrarMensaje('error', err.message);
+      throw err;
+    } finally {
+      setCargando(false);
+    }
+  }, []);
+
+  const eliminarIngrediente = useCallback(async ingredienteId => {
+    setCargando(true);
+    try {
+      const res = await mockService.eliminarIngrediente(ingredienteId);
+      mostrarMensaje('success', `Ingrediente "${res.nombre}" eliminado del catálogo.`);
+      return res;
+    } catch (err) {
+      mostrarMensaje('error', err.message);
+      throw err;
+    } finally {
+      setCargando(false);
+    }
+  }, []);
+
   const registrarCompra = useCallback(async ({ providerId, itemsComprados }) => {
     setCargando(true);
     try {
@@ -131,6 +162,8 @@ export function InventoryProvider({ children }) {
     ...snapshot,
     cargando,
     notificacion,
+    guardarIngrediente,
+    eliminarIngrediente,
     registrarCompra,
     reservarComanda,
     confirmarConsumo,
