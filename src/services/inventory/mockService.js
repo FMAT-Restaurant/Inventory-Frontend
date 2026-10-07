@@ -74,6 +74,28 @@ export const mockService = {
   },
 
   /**
+   * Crea o actualiza un ingrediente del catálogo.
+   */
+  async guardarIngrediente(data) {
+    await delay();
+    return inventoryStore.guardarIngrediente(data);
+  },
+  async saveIngredient(data) {
+    return this.guardarIngrediente(data);
+  },
+
+  /**
+   * Elimina un ingrediente del catálogo (solo si no tiene existencias).
+   */
+  async eliminarIngrediente(id) {
+    await delay();
+    return inventoryStore.eliminarIngrediente(id);
+  },
+  async deleteIngredient(id) {
+    return this.eliminarIngrediente(id);
+  },
+
+  /**
    * Obtiene los platillos del menú con su estado de disponibilidad y porciones
    */
   async getPlatillos(fechaReferencia = new Date()) {

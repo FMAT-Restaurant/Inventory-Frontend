@@ -95,6 +95,87 @@ class InventoryStore {
   }
 
   /**
+   * Crea o actualiza un ingrediente del catálogo (RF de catálogo de insumos).
+   * Si `data.id` coincide con un ingrediente existente se actualiza; en caso contrario se crea.
+   */
+  guardarIngrediente(data = {}) {
+    const nombre = (data.nombre || '').trim();
+    const unidad = (data.unidad || '').trim();
+
+    if (!nombre) {
+      throw new Error('El nombre del ingrediente es obligatorio.');
+    }
+    if (!unidad) {
+      throw new Error('La unidad de medida es obligatoria.');
+    }
+
+    const minimo = Number(data.minimo);
+    const costoPromedio = Number(data.costoPromedio);
+    if (Number.isNaN(minimo) || minimo < 0) {
+      throw new Error('El umbral mínimo debe ser un número mayor o igual a 0.');
+    }
+    if (Number.isNaN(costoPromedio) || costoPromedio < 0) {
+      throw new Error('El costo promedio debe ser un número mayor o igual a 0');
+    }
+
+    const duplicado = this.ingredientes.find(
+      i => i.nombre.toLowerCase() === nombre.toLowerCase() && i.id !== data.id
+    );
+    if (duplicado) {
+      throw new Error(`Ya existe un ingrediente con el nombre "${nombre}".`);
+    }
+
+    const datosBase = {
+      nombre,
+      unidad,
+      minimo: Number(minimo),
+      costoPromedio: Number(costoPromedio),
+      providerIdSugerido: data.providerIdSugerido || null,
+      categoria: (data.categoria || '').trim() || 'General'
+    };
+
+    if (data.id) {
+      const index = this.ingredientes.findIndex(i => i.id === data.id);
+      if (index === -1) {
+        throw new Error(`Ingrediente no encontrado: ${data.id}`);
+      }
+      this.ingredientes[index] = { ...this.ingredientes[index], ...datosBase };
+      this.notify();
+      return { ...this.ingredientes[index] };
+    }
+
+    const nuevoIngrediente = {
+      id: `ing-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 1000)}`,
+      ...datosBase
+    };
+    this.ingredientes.push(nuevoIngrediente);
+    this.notify();
+    return { ...nuevoIngrediente };
+  }
+
+  /**
+   * Elimina un ingrediente del catálogo. No permite eliminar si tiene lotes activos con existencia.
+   */
+  eliminarIngrediente(ingredienteId) {
+    const index = this.ingredientes.findIndex(i => i.id === ingredienteId);
+    if (index === -1) {
+      throw new Error(`Ingrediente no encontrado: ${ingredienteId}`);
+    }
+
+    const tieneStock = this.lotes.some(
+      l => l.ingredientId === ingredienteId && l.cantidadActual > 0
+    );
+    if (tieneStock) {
+      throw new Error('No se puede eliminar un ingrediente con existencias en almacén.');
+    }
+
+    const [eliminado] = this.ingredientes.splice(index, 1);
+    this.lotes = this.lotes.filter(l => l.ingredientId !== ingredienteId);
+    this.notify();
+    return { ...eliminado };
+  }
+
+  /**
    * Obtiene la existencia física total vigente (lotes activos y no vencidos respecto a fechaReferencia)
    * @param {string} ingredientId
    * @param {Date|string} fechaReferencia

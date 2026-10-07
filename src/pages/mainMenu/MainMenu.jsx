@@ -1,6 +1,6 @@
-import { Card } from '../components/ui/Card.jsx';
-import { Button } from '../components/ui/Button.jsx';
-import { BoxIcon, BookOpenIcon, ClipboardListIcon, ArrowRightIcon } from '../components/ui/Icons.jsx';
+import { Card } from '../../components/ui/Card.jsx';
+import { Button } from '../../components/ui/Button.jsx';
+import { BoxIcon, BookOpenIcon, ClipboardListIcon, ArrowRightIcon, PackageIcon } from '../../components/ui/Icons.jsx';
 
 /**
  * Menú Inicial según FMAT-RESTAURANT v2.0
@@ -8,6 +8,11 @@ import { BoxIcon, BookOpenIcon, ClipboardListIcon, ArrowRightIcon } from '../com
  */
 export function MainMenu({ onSelectModule }) {
   const modules = [
+    {
+      id: 'ingredientes',
+      title: 'Ingredientes',
+      icon: PackageIcon
+    },
     {
       id: 'insumos',
       title: 'Insumos y Lotes',

@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { useInventory } from '../context/InventoryContext.jsx';
-import { Card } from '../components/ui/Card.jsx';
-import { Badge } from '../components/ui/Badge.jsx';
-import { Button } from '../components/ui/Button.jsx';
-import { Modal } from '../components/ui/Modal.jsx';
-import { UtensilsIcon } from '../components/ui/Icons.jsx';
+import { useInventory } from '../../context/InventoryContext.jsx';
+import { Card } from '../../components/ui/Card.jsx';
+import { Badge } from '../../components/ui/Badge.jsx';
+import { Button } from '../../components/ui/Button.jsx';
+import { Modal } from '../../components/ui/Modal.jsx';
+import { UtensilsIcon } from '../../components/ui/Icons.jsx';
 
 export function RecetasPage() {
   const { platillos, ingredientes } = useInventory();
