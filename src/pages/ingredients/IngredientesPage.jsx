@@ -35,7 +35,12 @@ export function IngredientesPage() {
   const [formulario, setFormulario] = useState(formularioVacio(proveedores));
   const [errorFormulario, setErrorFormulario] = useState('');
 
-  const categorias = ['TODAS', ...Array.from(new Set(ingredientes.map(i => i.categoria))).sort()];
+  const categorias = [
+    'TODAS',
+    ...Array.from(new Set(ingredientes.map(i => i.categoria))).sort((a, b) =>
+      a.localeCompare(b, 'es', { sensitivity: 'base' })
+    )
+  ];
 
   const ingredientesFiltrados = ingredientes.filter(ing => {
     const coincideBusqueda =
