@@ -72,12 +72,12 @@ export function InsumosPage({ preselectedIngredientId }) {
   // Filtrado de ingredientes
   const ingredientesFiltrados = ingredientes.filter(ing => {
     const coincideBusqueda =
-      ing.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-      ing.categoria.toLowerCase().includes(busqueda.toLowerCase());
+      ing.name.toLowerCase().includes(busqueda.toLowerCase()) ||
+      ing.category.toLowerCase().includes(busqueda.toLowerCase());
 
     if (!coincideBusqueda) return false;
     if (filtroEstado === 'TODOS') return true;
-    return ing.estadoUmbral === filtroEstado;
+    return ing.status === filtroEstado;
   });
 
   return (
@@ -182,7 +182,7 @@ export function InsumosPage({ preselectedIngredientId }) {
               >
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <h3 style={{ fontSize: 'var(--h3-size)' }}>{ing.nombre}</h3>
+                    <h3 style={{ fontSize: 'var(--h3-size)' }}>{ing.name}</h3>
                     <span
                       style={{
                         fontSize: 'var(--caption-size)',
@@ -192,20 +192,20 @@ export function InsumosPage({ preselectedIngredientId }) {
                         color: 'var(--color-muted)'
                       }}
                     >
-                      {ing.categoria}
+                      {ing.category}
                     </span>
                     <Badge
                       variant={
-                        ing.estadoUmbral === EstadoUmbral.CRITICO
+                        ing.status === EstadoUmbral.CRITICO
                           ? 'danger'
-                          : ing.estadoUmbral === EstadoUmbral.BAJO
+                          : ing.status === EstadoUmbral.BAJO
                           ? 'warning'
                           : 'success'
                       }
                     >
-                      {ing.estadoUmbral === EstadoUmbral.CRITICO
+                      {ing.status === EstadoUmbral.CRITICO
                         ? 'Agotado'
-                        : ing.estadoUmbral === EstadoUmbral.BAJO
+                        : ing.status === EstadoUmbral.BAJO
                         ? 'Bajo'
                         : 'Óptimo'}
                     </Badge>
@@ -223,19 +223,19 @@ export function InsumosPage({ preselectedIngredientId }) {
                     <div>
                       <span style={{ color: 'var(--color-muted)' }}>Existencia Disponible: </span>
                       <strong style={{ color: 'var(--color-ink)', fontSize: '15px' }}>
-                        {ing.existenciaDisponible} {ing.unidad}
+                        {ing.availableStock} {ing.unit}
                       </strong>
                     </div>
                     <div>
                       <span style={{ color: 'var(--color-muted)' }}>Comprometido: </span>
-                      <strong style={{ color: ing.stockReservado > 0 ? 'var(--color-primary)' : 'var(--color-muted)' }}>
-                        {ing.stockReservado} {ing.unidad}
+                      <strong style={{ color: ing.reservedStock > 0 ? 'var(--color-primary)' : 'var(--color-muted)' }}>
+                        {ing.reservedStock} {ing.unit}
                       </strong>
                     </div>
                     <div>
                       <span style={{ color: 'var(--color-muted)' }}>Stock Total: </span>
                       <strong>
-                        {ing.existenciaTotal} {ing.unidad}
+                        {ing.totalStock} {ing.unit}
                       </strong>
                     </div>
                   </div>
@@ -319,7 +319,7 @@ export function InsumosPage({ preselectedIngredientId }) {
 
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                               <span>
-                                Cantidad: <strong>{lote.cantidadActual}</strong> / {lote.cantidadInicial} {ing.unidad}
+                                Cantidad: <strong>{lote.cantidadActual}</strong> / {lote.cantidadInicial} {ing.unit}
                               </span>
                               <Badge
                                 variant={
@@ -374,7 +374,7 @@ export function InsumosPage({ preselectedIngredientId }) {
           >
             {proveedores.map(prov => (
               <option key={prov.id} value={prov.id}>
-                {prov.nombre}
+                {prov.name}
               </option>
             ))}
           </Select>
@@ -387,7 +387,7 @@ export function InsumosPage({ preselectedIngredientId }) {
           >
             {ingredientes.map(ing => (
               <option key={ing.id} value={ing.id}>
-                {ing.nombre} ({ing.unidad})
+                {ing.name} ({ing.unit})
               </option>
             ))}
           </Select>

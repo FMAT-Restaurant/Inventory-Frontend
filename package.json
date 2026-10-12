@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "preview:qa": "vite preview --mode qa",
-    "test": "node test/mockService.test.js"
+    "test": "node test/mockService.test.js",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "react": "^19.2.8",
@@ -19,7 +20,9 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^26.6.4",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",

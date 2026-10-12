@@ -31,8 +31,8 @@ export function IngredientCard({
           }}
         >
           <h3 style={{ fontSize: "var(--h3-size)" }}>{ingredient.name}</h3>
-          <Badge variant={badgeVariant(ingredient.estadoUmbral)}>
-            {estadoLabel(ingredient.estadoUmbral)}
+          <Badge variant={badgeVariant(ingredient.status)}>
+            {estadoLabel(ingredient.status)}
           </Badge>
         </div>
 
@@ -79,7 +79,7 @@ export function IngredientCard({
           </div>
           <div>
             <span style={{ color: "var(--color-muted)" }}>Costo prom.: </span>
-            <strong>${Number(ingredient.costoPromedio).toFixed(2)}</strong>
+            <strong>${Number(ingredient.averageCost).toFixed(2)}</strong>
           </div>
         </div>
 
@@ -92,7 +92,7 @@ export function IngredientCard({
         >
           Proveedor sugerido:{" "}
           <strong style={{ color: "var(--color-text)" }}>
-            {supplier?.nombre || "Sin asignar"}
+            {supplier?.name || "Sin asignar"}
           </strong>
         </div>
       </div>

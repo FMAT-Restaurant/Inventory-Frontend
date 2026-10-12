@@ -14,7 +14,7 @@ export const formFromIngredients = (ingrediente, suppliers = []) => ({
   name: ingrediente.name,
   category: ingrediente.category || "",
   unit: ingrediente.unit,
-  minStock: String(ingrediente.min),
+  minStock: String(ingrediente.minStock),
   supplierIdSugested: ingrediente.supplierIdSugested || suppliers[0]?.id || "",
 });
 

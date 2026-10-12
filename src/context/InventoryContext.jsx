@@ -27,7 +27,7 @@ export function InventoryProvider({ children }) {
       const res = await mockService.guardarIngrediente(data);
       mostrarMensaje(
         'success',
-        data?.id ? `Ingrediente "${res.nombre}" actualizado.` : `Ingrediente "${res.nombre}" agregado al catálogo.`
+        data?.id ? `Ingrediente "${res.name}" actualizado.` : `Ingrediente "${res.name}" agregado al catálogo.`
       );
       return res;
     } catch (err) {
@@ -42,7 +42,7 @@ export function InventoryProvider({ children }) {
     setCargando(true);
     try {
       const res = await mockService.eliminarIngrediente(ingredienteId);
-      mostrarMensaje('success', `Ingrediente "${res.nombre}" eliminado del catálogo.`);
+      mostrarMensaje('success', `Ingrediente "${res.name}" eliminado del catálogo.`);
       return res;
     } catch (err) {
       mostrarMensaje('error', err.message);

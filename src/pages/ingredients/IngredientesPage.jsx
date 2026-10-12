@@ -75,7 +75,7 @@ export function IngredientesPage() {
   const confirmDelete = async (ingredient) => {
     if (
       !window.confirm(
-        `¿Eliminar el ingrediente "${ingredient.nombre}" del catálogo?`,
+        `¿Eliminar el ingrediente "${ingredient.name}" del catálogo?`,
       )
     )
       return;
@@ -124,7 +124,7 @@ export function IngredientesPage() {
               key={ingredient.id}
               ingredient={ingredient}
               supplier={
-                ingredient.proveedorSugerido ||
+                ingredient.supplierSugested ||
                 suppliersById.get(ingredient.supplierIdSugested) ||
                 null
               }
