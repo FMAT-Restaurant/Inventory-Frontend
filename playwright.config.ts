@@ -29,17 +29,23 @@ export default defineConfig({
     baseURL: "http://localhost:5173/Inventory-Frontend/",
     screenshot: "only-on-failure",
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-    trace: "on-first-retry",
+    trace: "retain-on-failure",
+    video: process.env.CI ? "retain-on-failure" : "off",
+    actionTimeout: 10_000,
+    navigationTimeout: 30_000,
+  },
+
+  expect: {
+    timeout: 10_000,
   },
 
   /* Configure projects for major browsers */
   projects: [
-    /*
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      name: "chromium",
+      use: { ...devices["Desktop Chrome"] },
     },
-    */
+
     {
       name: "firefox",
       use: { ...devices["Desktop Firefox"] },
@@ -65,10 +71,10 @@ export default defineConfig({
     //   name: 'Microsoft Edge',
     //   use: { ...devices['Desktop Edge'], channel: 'msedge' },
     // },
-    {
-      name: "Google Chrome",
-      use: { ...devices["Desktop Chrome"], channel: "chrome" },
-    },
+    //{
+    //  name: "Google Chrome",
+    //  use: { ...devices["Desktop Chrome"], channel: "chrome" },
+    //},
   ],
 
   /* Run your local dev server before starting the tests */
@@ -77,5 +83,7 @@ export default defineConfig({
     url: "http://localhost:5173/Inventory-Frontend/",
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
+    stdout: "pipe",
+    stderr: "pipe",
   },
 });

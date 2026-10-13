@@ -1,0 +1,125 @@
+name: E2E Tests (Playwright)
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    env:
+      CI: true
+      # Backend env (mínimo para levantar con compose)
+      MONGO_INITDB_ROOT_USERNAME: inventory
+      MONGO_INITDB_ROOT_PASSWORD: inventory_dev
+      MONGO_INITDB_DATABASE: inventory
+      FRONTEND_URL: http://localhost:5173
+      NODE_ENV: qa
+      PORT: 3000
+      # RABBITMQ_URL puede dejarse vacío o usar secreto si aplica; backend lo lee
+      RABBITMQ_URL: ${{ secrets.RABBITMQ_URL }}
+
+    steps:
+      - name: Checkout Frontend
+        uses: actions/checkout@v4
+
+      - name: Checkout Backend
+        uses: actions/checkout@v4
+        with:
+          repository: fmat-restaurant/Inventory-Backend
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref || 'main' }}
+          path: Inventory-Backend
+          token: ${{ secrets.GH_PAT_BACKEND || github.token }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      # Backend via Docker Compose (usa healthchecks de compose.yaml)
+      - name: Create Backend .env for Compose
+        working-directory: Inventory-Backend
+        run: |
+          cat > .env << 'EOF'
+          MONGO_INITDB_ROOT_USERNAME=${{ env.MONGO_INITDB_ROOT_USERNAME }}
+          MONGO_INITDB_ROOT_PASSWORD=${{ env.MONGO_INITDB_ROOT_PASSWORD }}
+          MONGO_INITDB_DATABASE=${{ env.MONGO_INITDB_DATABASE }}
+          MONGODB_URI=mongodb://${{ env.MONGO_INITDB_ROOT_USERNAME }}:${{ env.MONGO_INITDB_ROOT_PASSWORD }}@db:27017/${{ env.MONGO_INITDB_DATABASE }}?authSource=admin
+          PORT=${{ env.PORT }}
+          FRONTEND_URL=${{ env.FRONTEND_URL }}
+          NODE_ENV=${{ env.NODE_ENV }}
+          RABBITMQ_URL=${{ env.RABBITMQ_URL }}
+          EOF
+
+      - name: Start Backend (Docker Compose)
+        working-directory: Inventory-Backend
+        run: |
+          docker compose up -d --build --wait
+          docker compose ps
+
+      - name: Wait for Backend HTTP readiness
+        run: |
+          for i in {1..60}; do
+            if curl -fsS "http://localhost:3000/" >/dev/null; then
+              echo "Backend ready at :3000"
+              exit 0
+            fi
+            echo "Waiting backend... ($i/60)"
+            sleep 3
+          done
+          echo "Backend not ready"
+          docker compose -f Inventory-Backend/compose.yaml logs --tail 80
+          exit 1
+
+      # Frontend + Playwright
+      - name: Configure Frontend .env
+        run: |
+          cat > .env << 'EOF'
+          VITE_APP_ENV=qa
+          VITE_USE_MOCK=false
+          VITE_API_URL=http://localhost:3000
+          EOF
+
+      - name: Install Frontend dependencies
+        run: npm ci
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Run Playwright E2E
+        env:
+          CI: true
+        run: npx playwright test
+
+      - name: Upload Playwright report
+        if: failure() || cancelled()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Stop Backend
+        if: always()
+        working-directory: Inventory-Backend
+        run: docker compose down -v
