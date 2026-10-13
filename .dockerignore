@@ -1,0 +1,14 @@
+node_modules
+dist
+dist-ssr
+test-results
+playwright-report
+blob-report
+.git
+.github
+.env
+.env.*
+!.env.example
+*.local
+*.log
+.DS_Store
