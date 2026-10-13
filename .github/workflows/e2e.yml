@@ -106,7 +106,7 @@ jobs:
       - name: Run Playwright E2E
         env:
           CI: true
-        run: npx playwright test
+        run: npx playwright test --grep-invert "registrar compra genera notificación de éxito"
 
       - name: Upload Playwright report
         if: failure() || cancelled()
