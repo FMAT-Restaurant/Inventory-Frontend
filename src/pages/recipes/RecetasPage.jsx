@@ -106,7 +106,7 @@ export function RecetasPage() {
                       marginBottom: '10px'
                     }}
                   >
-                    Insumos agotados: {platillo.faltantes.map(f => f.nombre).join(', ')}
+                    Insumos agotados: {platillo.faltantes.map(f => f.name).join(', ')}
                   </div>
                 )}
               </div>
@@ -159,10 +159,10 @@ export function RecetasPage() {
                     }}
                   >
                     <div>
-                      <strong style={{ color: 'var(--color-ink)' }}>{item.nombre}</strong>
+                      <strong style={{ color: 'var(--color-ink)' }}>{item.name}</strong>
                       <div style={{ fontSize: 'var(--caption-size)', color: 'var(--color-muted)', marginTop: '2px' }}>
-                        Requerido: <strong>{item.cantidadRequerida} {ingCompleto?.unidad}</strong> | En almacén:{' '}
-                        <strong>{item.disponible} {ingCompleto?.unidad}</strong>
+                        Requerido: <strong>{item.cantidadRequerida} {ingCompleto?.unit}</strong> | En almacén:{' '}
+                        <strong>{item.disponible} {ingCompleto?.unit}</strong>
                       </div>
                     </div>
 

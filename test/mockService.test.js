@@ -19,9 +19,9 @@ async function runTests() {
   console.log(`Total ingredientes cargados: ${ingredientes.length}`);
   
   const carne = ingredientes.find(i => i.id === 'ing-4');
-  console.log(`Carne de Res Molida: Stock=${carne.existenciaDisponible} kg, Min=${carne.minimo} kg -> Umbral=${carne.estadoUmbral}`);
-  if (carne.estadoUmbral !== EstadoUmbral.BAJO) {
-    throw new Error(`Esperado estado BAJO para carne, recibido: ${carne.estadoUmbral}`);
+  console.log(`Carne de Res Molida: Stock=${carne.availableStock} kg, Min=${carne.minStock} kg -> Umbral=${carne.status}`);
+  if (carne.status !== EstadoUmbral.BAJO) {
+    throw new Error(`Esperado estado BAJO para carne, recibido: ${carne.status}`);
   }
   console.log('✅ Test 1 superado (Umbrales automáticos).');
 
@@ -39,14 +39,14 @@ async function runTests() {
   console.log('\n--- Test 3: Consumo directo de receta y precisión decimal ---');
   // plate-1 (Pizza) consume 0.25 kg harina, 0.20 kg mozzarella, 0.15 l salsa
   // Pedir 4 pizzas consume exactamente 1.0 kg harina, 0.8 kg mozzarella, 0.6 l salsa
-  const harinaAntes = (await mockService.getIngredients(fechaTest)).find(i => i.id === 'ing-1').existenciaDisponible;
+  const harinaAntes = (await mockService.getIngredients(fechaTest)).find(i => i.id === 'ing-1').availableStock;
   const consumoDirecto = await mockService.consumeRecipe('plate-1', 4, { fechaReferencia: fechaTest });
 
   if (!consumoDirecto.exito) {
     throw new Error(`Fallo en consumo directo: ${consumoDirecto.motivo}`);
   }
 
-  const harinaDespues = (await mockService.getIngredients(fechaTest)).find(i => i.id === 'ing-1').existenciaDisponible;
+  const harinaDespues = (await mockService.getIngredients(fechaTest)).find(i => i.id === 'ing-1').availableStock;
   const diferenciaHarina = Number((harinaAntes - harinaDespues).toFixed(4));
   console.log(`Harina antes: ${harinaAntes} kg, después: ${harinaDespues} kg (Diferencia: ${diferenciaHarina} kg)`);
   if (diferenciaHarina !== 1.0) {
@@ -87,12 +87,12 @@ async function runTests() {
   }
 
   const carnePostCompra = (await mockService.getIngredients(fechaTest)).find(i => i.id === 'ing-4');
-  console.log(`Carne tras compra de 20kg: Stock total=${carnePostCompra.existenciaTotal} kg, Nuevo Umbral=${carnePostCompra.estadoUmbral}, CPP=$${carnePostCompra.costoPromedio}`);
-  if (carnePostCompra.existenciaTotal < 25) {
+  console.log(`Carne tras compra de 20kg: Stock total=${carnePostCompra.totalStock} kg, Nuevo Umbral=${carnePostCompra.status}, CPP=$${carnePostCompra.averageCost}`);
+  if (carnePostCompra.totalStock < 25) {
     throw new Error('Stock total no se incrementó debidamente');
   }
-  if (carnePostCompra.estadoUmbral !== EstadoUmbral.OPTIMO) {
-    throw new Error(`Esperado estado OPTIMO tras compra, recibido: ${carnePostCompra.estadoUmbral}`);
+  if (carnePostCompra.status !== EstadoUmbral.OPTIMO) {
+    throw new Error(`Esperado estado OPTIMO tras compra, recibido: ${carnePostCompra.status}`);
   }
   console.log('✅ Test 5 superado (Ingreso incrementa existencias y actualiza CPP).');
 
@@ -112,8 +112,8 @@ async function runTests() {
   console.log('\n--- Test 7: Reset del estado a fixtures iniciales ---');
   await mockService.reset();
   const carneTrasReset = (await mockService.getIngredients(fechaTest)).find(i => i.id === 'ing-4');
-  if (carneTrasReset.existenciaTotal !== 5) {
-    throw new Error(`Esperado stock inicial de 5kg tras reset, recibido: ${carneTrasReset.existenciaTotal}`);
+  if (carneTrasReset.totalStock !== 5) {
+    throw new Error(`Esperado stock inicial de 5kg tras reset, recibido: ${carneTrasReset.totalStock}`);
   }
   console.log('✅ Test 7 superado (Estado reiniciado limpiamente).');
 

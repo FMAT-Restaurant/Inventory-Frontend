@@ -79,35 +79,35 @@ export function descontarLotesFEFO(lotes, cantidadADescontar, fechaReferencia = 
 
 /**
  * Valida la existencia disponible para evitar saldos negativos.
- * existenciaDisponible = existenciaTotalVigente - stockReservado
+ * availableStock = totalStockVigente - reservedStock
  * 
- * @param {number} existenciaTotal
- * @param {number} stockReservado
+ * @param {number} totalStock
+ * @param {number} reservedStock
  * @param {number} cantidadRequerida
- * @returns {Object} { esValido, existenciaDisponible, faltante }
+ * @returns {Object} { esValido, availableStock, faltante }
  */
-export function validarStockDisponible(existenciaTotal, stockReservado, cantidadRequerida) {
-  const disponible = roundQuantity(Math.max(0, existenciaTotal - stockReservado));
+export function validarStockDisponible(totalStock, reservedStock, cantidadRequerida) {
+  const disponible = roundQuantity(Math.max(0, totalStock - reservedStock));
   const requerido = roundQuantity(cantidadRequerida);
   const esValido = disponible >= requerido;
   const faltante = esValido ? 0 : roundQuantity(requerido - disponible);
 
   return {
     esValido,
-    existenciaDisponible: disponible,
+    availableStock: disponible,
     faltante
   };
 }
 
 /**
  * Determina el estado de umbral de un ingrediente.
- * @param {number} existenciaDisponible
- * @param {number} minimo
+ * @param {number} availableStock
+ * @param {number} minStock
  * @returns {string} EstadoUmbral (OPTIMO, BAJO, CRITICO)
  */
-export function calcularEstadoUmbral(existenciaDisponible, minimo) {
-  const disp = roundQuantity(existenciaDisponible);
-  const min = roundQuantity(minimo);
+export function calcularEstadoUmbral(availableStock, minStock) {
+  const disp = roundQuantity(availableStock);
+  const min = roundQuantity(minStock);
 
   if (disp <= 0) {
     return EstadoUmbral.CRITICO;
@@ -123,7 +123,7 @@ export function calcularEstadoUmbral(existenciaDisponible, minimo) {
  * Regla de "Receta Agotada": disponible = false cuando unidadesPreparables === 0.
  * 
  * @param {Object} platillo
- * @param {Map<string, { existenciaDisponible, nombre }>} stockIngredientesMap
+ * @param {Map<string, { availableStock, name }>} stockIngredientesMap
  * @returns {Object} { plateId, nombre, disponible, unidadesPreparables, ingredientesDetalle, faltantes }
  */
 export function evaluarDisponibilidadReceta(platillo, stockIngredientesMap) {
@@ -133,11 +133,11 @@ export function evaluarDisponibilidadReceta(platillo, stockIngredientesMap) {
 
   for (const item of platillo.receta) {
     const stockInfo = stockIngredientesMap.get(item.ingredientId) || {
-      existenciaDisponible: 0,
-      nombre: 'Desconocido'
+      availableStock: 0,
+      name: 'Desconocido'
     };
 
-    const disp = roundQuantity(stockInfo.existenciaDisponible);
+    const disp = roundQuantity(stockInfo.availableStock);
     const req = roundQuantity(item.cantidad);
 
     const porcionesPosibles = Math.floor(disp / req);
@@ -149,7 +149,7 @@ export function evaluarDisponibilidadReceta(platillo, stockIngredientesMap) {
     if (!suficiente) {
       faltantes.push({
         ingredientId: item.ingredientId,
-        nombre: stockInfo.nombre,
+        name: stockInfo.name,
         requerido: req,
         disponible: disp,
         faltante: roundQuantity(req - disp)
@@ -158,7 +158,7 @@ export function evaluarDisponibilidadReceta(platillo, stockIngredientesMap) {
 
     ingredientesDetalle.push({
       ingredientId: item.ingredientId,
-      nombre: stockInfo.nombre,
+      name: stockInfo.name,
       cantidadRequerida: req,
       disponible: disp,
       porcionesPosibles
@@ -200,7 +200,7 @@ export function calcularCostoPonderado(existenciaActual, cppActual, cantidadNuev
 /**
  * Calcula el costo de insumos de una receta a partir del costo promedio ponderado.
  * @param {Array} receta
- * @param {Map<string, { costoPromedio }>} ingredientesMap
+ * @param {Map<string, { averageCost }>} ingredientesMap
  * @returns {number}
  */
 export function calcularCostoProduccion(receta, ingredientesMap) {
@@ -208,7 +208,7 @@ export function calcularCostoProduccion(receta, ingredientesMap) {
   for (const item of receta) {
     const ing = ingredientesMap.get(item.ingredientId);
     if (ing) {
-      total += item.cantidad * (ing.costoPromedio || 0);
+      total += item.cantidad * (ing.averageCost || 0);
     }
   }
   return Number(total.toFixed(2));

@@ -1,0 +1,18 @@
+services:
+  e2e:
+    build:
+      context: .
+      dockerfile: Dockerfile.e2e
+    image: inventory-frontend-e2e
+    environment:
+      CI: "true"
+      VITE_APP_ENV: qa
+      VITE_USE_MOCK: "false"
+      VITE_API_URL: http://host.docker.internal:3000
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./e2e/ingredient.spec.ts-snapshots:/app/e2e/ingredient.spec.ts-snapshots
+      - ./test-results:/app/test-results
+      - ./playwright-report:/app/playwright-report
+    command: npx playwright test --update-snapshots

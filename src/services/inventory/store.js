@@ -101,39 +101,39 @@ class InventoryStore {
    * Si `data.id` coincide con un ingrediente existente se actualiza; en caso contrario se crea.
    */
   guardarIngrediente(data = {}) {
-    const nombre = (data.nombre || '').trim();
-    const unidad = (data.unidad || '').trim();
+    const name = (data.name || '').trim();
+    const unit = (data.unit || '').trim();
 
-    if (!nombre) {
+    if (!name) {
       throw new Error('El nombre del ingrediente es obligatorio.');
     }
-    if (!unidad) {
+    if (!unit) {
       throw new Error('La unidad de medida es obligatoria.');
     }
 
-    const minimo = Number(data.minimo);
-    const costoPromedio = Number(data.costoPromedio);
-    if (Number.isNaN(minimo) || minimo < 0) {
+    const minStock = Number(data.minStock);
+    const averageCost = data.averageCost === undefined ? 0 : Number(data.averageCost);
+    if (Number.isNaN(minStock) || minStock < 0) {
       throw new Error('El umbral mínimo debe ser un número mayor o igual a 0.');
     }
-    if (Number.isNaN(costoPromedio) || costoPromedio < 0) {
+    if (Number.isNaN(averageCost) || averageCost < 0) {
       throw new Error('El costo promedio debe ser un número mayor o igual a 0');
     }
 
     const duplicado = this.ingredientes.find(
-      i => i.nombre.toLowerCase() === nombre.toLowerCase() && i.id !== data.id
+      i => i.name.toLowerCase() === name.toLowerCase() && i.id !== data.id
     );
     if (duplicado) {
-      throw new Error(`Ya existe un ingrediente con el nombre "${nombre}".`);
+      throw new Error(`Ya existe un ingrediente con el nombre "${name}".`);
     }
 
     const datosBase = {
-      nombre,
-      unidad,
-      minimo: Number(minimo),
-      costoPromedio: Number(costoPromedio),
-      providerIdSugerido: data.providerIdSugerido || null,
-      categoria: (data.categoria || '').trim() || 'General'
+      name,
+      unit,
+      minStock: Number(minStock),
+      averageCost: Number(averageCost),
+      supplierIdSugested: data.supplierIdSugested || null,
+      category: (data.category || '').trim() || 'General'
     };
 
     if (data.id) {
@@ -201,19 +201,19 @@ class InventoryStore {
    */
   getIngredientesConsolidados(fechaReferencia = new Date()) {
     return this.ingredientes.map(ing => {
-      const existenciaTotal = this.getExistenciaTotal(ing.id, fechaReferencia);
-      const stockReservado = this.getStockReservado(ing.id);
-      const existenciaDisponible = roundQuantity(Math.max(0, existenciaTotal - stockReservado));
-      const estadoUmbral = calcularEstadoUmbral(existenciaDisponible, ing.minimo);
-      const proveedorSugerido = this.proveedores.find(p => p.id === ing.providerIdSugerido);
+      const totalStock = this.getExistenciaTotal(ing.id, fechaReferencia);
+      const reservedStock = this.getStockReservado(ing.id);
+      const availableStock = roundQuantity(Math.max(0, totalStock - reservedStock));
+      const status = calcularEstadoUmbral(availableStock, ing.minStock);
+      const supplierSugested = this.proveedores.find(p => p.id === ing.supplierIdSugested);
 
       return {
         ...ing,
-        existenciaTotal,
-        stockReservado,
-        existenciaDisponible,
-        estadoUmbral,
-        proveedorSugerido
+        totalStock,
+        reservedStock,
+        availableStock,
+        status,
+        supplierSugested
       };
     });
   }
@@ -226,7 +226,7 @@ class InventoryStore {
     const stockMap = new Map(
       ingredientesConsolidados.map(ing => [
         ing.id,
-        { existenciaDisponible: ing.existenciaDisponible, nombre: ing.nombre, costoPromedio: ing.costoPromedio }
+        { availableStock: ing.availableStock, name: ing.name, averageCost: ing.averageCost }
       ])
     );
 
