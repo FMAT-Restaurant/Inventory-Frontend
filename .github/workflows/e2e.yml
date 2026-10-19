@@ -91,7 +91,7 @@ jobs:
           EOF
 
       - name: Install Frontend dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Cache Playwright browsers
         id: playwright-cache
@@ -101,12 +101,12 @@ jobs:
           key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps
+        run: ./node_modules/.bin/playwright install --with-deps
 
       - name: Run Playwright E2E
         env:
           CI: true
-        run: npx playwright test --grep-invert "registrar compra genera notificación de éxito"
+        run: ./node_modules/.bin/playwright test --grep-invert "registrar compra genera notificación de éxito"
 
       - name: Upload Playwright report
         if: failure() || cancelled()
