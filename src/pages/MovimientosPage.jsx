@@ -202,7 +202,7 @@ export function MovimientosPage() {
                           {esSalida && mov.detalle.trazaConsumoGlobal ? (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                               {mov.detalle.trazaConsumoGlobal.map(t => {
-                                const nombreIng = ingredientes.find(i => i.id === t.ingredientId)?.nombre || t.ingredientId;
+                                const nombreIng = ingredientes.find(i => i.id === t.ingredientId)?.name || t.ingredientId;
                                 return (
                                   <span key={t.ingredientId} style={{ fontSize: 'var(--caption-size)' }}>
                                     • {nombreIng}: {t.desgloseLotes.map(l => `${l.loteId} (-${l.cantidadDescontada})`).join(', ')}

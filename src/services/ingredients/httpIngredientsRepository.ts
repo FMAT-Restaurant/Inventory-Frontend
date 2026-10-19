@@ -37,7 +37,12 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     return undefined as T;
   }
 
-  return (await response.json()) as T;
+  const raw = await response.text();
+  if (!raw) {
+    return undefined as T;
+  }
+
+  return JSON.parse(raw) as T;
 }
 
 export const httpIngredientsRepository: IngredientsRepository = {

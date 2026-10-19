@@ -135,7 +135,7 @@ export const mockService = {
     await delay();
     const ingredientes = inventoryStore.getIngredientesConsolidados(fechaReferencia);
     return ingredientes.filter(
-      ing => ing.estadoUmbral === EstadoUmbral.BAJO || ing.estadoUmbral === EstadoUmbral.CRITICO
+      ing => ing.status === EstadoUmbral.BAJO || ing.status === EstadoUmbral.CRITICO
     );
   },
 
@@ -239,11 +239,11 @@ export const mockService = {
       const existenciaActual = inventoryStore.getExistenciaTotal(ingredientId);
       const nuevoCPP = calcularCostoPonderado(
         existenciaActual,
-        ingrediente.costoPromedio,
+        ingrediente.averageCost,
         cantidadNum,
         costoNum
       );
-      ingrediente.costoPromedio = nuevoCPP;
+      ingrediente.averageCost = nuevoCPP;
 
       // 2. Generar Lote (RF-14 y RF-15)
       const nuevoLote = {
@@ -326,9 +326,9 @@ export const mockService = {
         const ing = inventoryStore.ingredientes.find(i => i.id === req.ingredientId);
         faltantes.push({
           ingredientId: req.ingredientId,
-          nombre: ing?.nombre || req.ingredientId,
+          name: ing?.name || req.ingredientId,
           requerido: req.cantidadRequerida,
-          disponible: check.existenciaDisponible,
+          disponible: check.availableStock,
           faltante: check.faltante
         });
       }
@@ -440,9 +440,9 @@ export const mockService = {
         const ing = inventoryStore.ingredientes.find(i => i.id === ingredientId);
         faltantes.push({
           ingredientId,
-          nombre: ing?.nombre || ingredientId,
+          name: ing?.name || ingredientId,
           requerido,
-          disponible: check.existenciaDisponible,
+          disponible: check.availableStock,
           faltante: check.faltante
         });
       } else {

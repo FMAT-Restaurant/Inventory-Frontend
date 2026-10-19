@@ -15,7 +15,7 @@ export interface Ingredient {
   id: string;
   name: string;
   unit: string;
-  min: number;
+  minStock: number;
   averageCost: number;
   category: string;
   supplierIdSugested: string | null;
