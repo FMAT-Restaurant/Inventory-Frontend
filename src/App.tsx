@@ -3,7 +3,7 @@ import { InventoryProvider } from './context/InventoryContext.jsx';
 import { Shell } from './components/layout/Shell.jsx';
 import { MainMenu } from './pages/mainMenu/MainMenu.jsx';
 import { IngredientesPage } from './pages/ingredients/IngredientesPage.jsx';
-import { InsumosPage } from './pages/InsumosPage.jsx';
+import { BatchesPage } from './pages/batches/BatchesPage.jsx';
 import { RecetasPage } from './pages/recipes/RecetasPage.jsx';
 import { MovimientosPage } from './pages/MovimientosPage.jsx';
 
@@ -27,7 +27,7 @@ function MainApp() {
       case 'ingredientes':
         return <IngredientesPage />;
       case 'insumos':
-        return <InsumosPage />;
+        return <BatchesPage />;
       case 'recetas':
         return <RecetasPage />;
       case 'movimientos':
