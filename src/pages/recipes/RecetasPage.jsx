@@ -1,189 +1,216 @@
-import { useState } from 'react';
-import { useInventory } from '../../context/InventoryContext.jsx';
-import { Card } from '../../components/ui/Card.jsx';
-import { Badge } from '../../components/ui/Badge.jsx';
-import { Button } from '../../components/ui/Button.jsx';
-import { Modal } from '../../components/ui/Modal.jsx';
-import { UtensilsIcon } from '../../components/ui/Icons.jsx';
-
+import { useState } from "react";
+import { useRecipes } from "./hooks/useRecipes";
+import { RecipesToolbar } from "./components/RecipesToolbar.jsx";
+import { RecipeCard } from "./components/RecipeCard.jsx";
+import { RecipeDetailModal } from "./components/RecipeDetailModal.jsx";
+import { RecipeFormModal } from "./components/RecipeFormModal.jsx";
+import { ConfirmDeleteModal } from "./components/ConfirmDeleteModal.jsx";
+import { RecipesEmptyState } from "./components/RecipesEmptyState.jsx";
 export function RecetasPage() {
-  const { platillos, ingredientes } = useInventory();
-  const [platilloSeleccionado, setPlatilloSeleccionado] = useState(null);
+  const {
+    filteredRecipes,
+    availableIngredients,
+    filters,
+    updateFilters,
+    loading,
+    loadingIngredients,
+    saving,
+    error,
+    message,
+    clearMessage,
+    save,
+    remove,
+  } = useRecipes();
 
-  const handleVerDetalles = platillo => {
-    setPlatilloSeleccionado(platillo);
+  // Modales
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [recipeToEdit, setRecipeToEdit] = useState(null);
+  const [recipeToView, setRecipeToView] = useState(null);
+  const [recipeToDelete, setRecipeToDelete] = useState(null);
+
+  const handleOpenCreate = () => {
+    setRecipeToEdit(null);
+    setIsFormOpen(true);
   };
 
-  const handleCerrarModal = () => {
-    setPlatilloSeleccionado(null);
+  const handleOpenEdit = (recipe) => {
+    setRecipeToEdit(recipe);
+    setIsFormOpen(true);
   };
+
+  const handleCloseForm = () => {
+    setIsFormOpen(false);
+    setRecipeToEdit(null);
+  };
+
+  const handleSaveRecipe = async (input, editingId) => {
+    await save(input, editingId);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!recipeToDelete) return;
+    try {
+      await remove(recipeToDelete.id || recipeToDelete.plateId);
+      setRecipeToDelete(null);
+    } catch {
+      // El error se gestiona dentro de useRecipes
+    }
+  };
+
+  const hasSearchOrFilter =
+    Boolean(filters.search.trim()) || filters.availability !== "ALL";
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      <div>
-        <p style={{ fontSize: 'var(--small-size)', color: 'var(--color-muted)' }}>
-          Estimación de porciones disponibles calculada a partir de las existencias actuales de ingredientes.
-        </p>
-      </div>
+    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+      {/* Banner de Mensaje de Éxito */}
+      {message && (
+        <div
+          style={{
+            padding: "12px 16px",
+            borderRadius: "var(--radius-control)",
+            backgroundColor: "var(--bg-success)",
+            color: "var(--color-success)",
+            fontSize: "var(--small-size)",
+            fontWeight: 500,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            boxShadow: "var(--shadow-flat)",
+          }}
+        >
+          <span>{message}</span>
+          <button
+            type="button"
+            onClick={clearMessage}
+            style={{
+              background: "none",
+              border: "none",
+              color: "currentColor",
+              cursor: "pointer",
+              fontWeight: 700,
+              fontSize: "16px",
+              padding: "0 4px",
+            }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
-      {/* Grid de Cards de Platillos según FMAT v2.0 */}
-      <div className="grid-responsive">
-        {platillos.map(platillo => {
-          return (
-            <Card
-              key={platillo.plateId}
-              padding="16px"
-              hoverable
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                gap: '16px'
-              }}
-            >
-              <div>
-                {/* Contenedor de Imagen Minimalista FMAT v2.0 */}
-                <div
-                  style={{
-                    height: '120px',
-                    borderRadius: '8px',
-                    backgroundColor: 'var(--color-primary-soft)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginBottom: '14px',
-                    color: 'var(--color-primary)',
-                    gap: '8px'
-                  }}
-                >
-                  <UtensilsIcon size={26} color="var(--color-primary)" />
-                  <span style={{ fontSize: 'var(--caption-size)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    {platillo.categoria}
-                  </span>
-                </div>
+      {/* Banner de Error */}
+      {error && (
+        <div
+          style={{
+            padding: "12px 16px",
+            borderRadius: "var(--radius-control)",
+            backgroundColor: "var(--bg-danger)",
+            color: "var(--color-danger)",
+            fontSize: "var(--small-size)",
+            fontWeight: 500,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            boxShadow: "var(--shadow-flat)",
+          }}
+        >
+          <span>{error}</span>
+          <button
+            type="button"
+            onClick={clearMessage}
+            style={{
+              background: "none",
+              border: "none",
+              color: "currentColor",
+              cursor: "pointer",
+              fontWeight: 700,
+              fontSize: "16px",
+              padding: "0 4px",
+            }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
-                {/* Badge de Disponibilidad */}
-                <div style={{ marginBottom: '8px' }}>
-                  <Badge variant={platillo.disponible ? 'success' : 'danger'}>
-                    {platillo.disponible ? 'Disponible' : 'Agotado'}
-                  </Badge>
-                </div>
+      {/* Barra de Búsqueda, Filtros y Creación */}
+      <RecipesToolbar
+        search={filters.search}
+        onSearchChange={(search) => updateFilters({ search })}
+        availability={filters.availability}
+        onAvailabilityChange={(availability) =>
+          updateFilters({ availability })
+        }
+        onNewRecipe={handleOpenCreate}
+        loadingIngredients={loadingIngredients}
+      />
 
-                {/* Título y Descripción */}
-                <h3 style={{ fontSize: 'var(--h3-size)', marginBottom: '6px' }}>{platillo.nombre}</h3>
-                <p
-                  style={{
-                    fontSize: 'var(--caption-size)',
-                    color: 'var(--color-muted)',
-                    lineHeight: '18px',
-                    marginBottom: '14px'
-                  }}
-                >
-                  {platillo.descripcion}
-                </p>
+      {/* Contenido Principal */}
+      {loading ? (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            minHeight: "200px",
+            color: "var(--color-muted)",
+            fontSize: "var(--small-size)",
+          }}
+        >
+          <span>Cargando catálogo de recetas y calculando porciones...</span>
+        </div>
+      ) : filteredRecipes.length === 0 ? (
+        <RecipesEmptyState
+          hasSearchOrFilter={hasSearchOrFilter}
+          onResetFilters={() =>
+            updateFilters({ search: "", availability: "ALL" })
+          }
+          onNewRecipe={handleOpenCreate}
+        />
+      ) : (
+        <div className="grid-responsive">
+          {filteredRecipes.map((recipe) => (
+            <RecipeCard
+              key={recipe.id || recipe.plateId}
+              recipe={recipe}
+              onViewDetail={(r) => setRecipeToView(r)}
+              onEdit={handleOpenEdit}
+              onDelete={(r) => setRecipeToDelete(r)}
+            />
+          ))}
+        </div>
+      )}
 
-                {/* Porciones Disponibles */}
-                <div style={{ fontSize: 'var(--small-size)', marginBottom: '8px' }}>
-                  <span style={{ color: 'var(--color-muted)' }}>Porciones disponibles: </span>
-                  <strong
-                    style={{
-                      color: platillo.unidadesPreparables > 0 ? 'var(--color-ink)' : 'var(--color-danger)'
-                    }}
-                  >
-                    {platillo.unidadesPreparables} {platillo.unidadesPreparables === 1 ? 'porción' : 'porciones'}
-                  </strong>
-                </div>
+      {/* Modal Detalle de Receta (Solo Lectura) */}
+      <RecipeDetailModal
+        recipe={recipeToView}
+        isOpen={Boolean(recipeToView)}
+        onClose={() => setRecipeToView(null)}
+      />
 
-                {platillo.faltantes.length > 0 && (
-                  <div
-                    style={{
-                      fontSize: '11px',
-                      color: 'var(--color-danger)',
-                      backgroundColor: 'var(--bg-danger)',
-                      padding: '8px 10px',
-                      borderRadius: '6px',
-                      marginBottom: '10px'
-                    }}
-                  >
-                    Insumos agotados: {platillo.faltantes.map(f => f.name).join(', ')}
-                  </div>
-                )}
-              </div>
+      {/* Modal Formulario de Creación / Edición */}
+      {isFormOpen && (
+        <RecipeFormModal
+          key={
+            recipeToEdit ? recipeToEdit.id || recipeToEdit.plateId : "new-recipe"
+          }
+          isOpen={isFormOpen}
+          onClose={handleCloseForm}
+          recipeToEdit={recipeToEdit}
+          availableIngredients={availableIngredients}
+          loadingIngredients={loadingIngredients}
+          onSave={handleSaveRecipe}
+          saving={saving}
+        />
+      )}
 
-              {/* Botón de Acción */}
-              <div>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  fullWidth
-                  onClick={() => handleVerDetalles(platillo)}
-                >
-                  Ver receta
-                </Button>
-              </div>
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* Modal Detalle de Receta */}
-      <Modal
-        isOpen={Boolean(platilloSeleccionado)}
-        onClose={handleCerrarModal}
-        title={platilloSeleccionado ? `Receta: ${platilloSeleccionado.nombre}` : ''}
-        maxWidth="600px"
-      >
-        {platilloSeleccionado && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <p style={{ fontSize: 'var(--small-size)', color: 'var(--color-muted)' }}>
-              Insumos requeridos por porción y disponibilidad en almacén:
-            </p>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {platilloSeleccionado.ingredientesDetalle.map(item => {
-                const ingCompleto = ingredientes.find(i => i.id === item.ingredientId);
-                const suficiente = item.disponible >= item.cantidadRequerida;
-
-                return (
-                  <div
-                    key={item.ingredientId}
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '12px 14px',
-                      borderRadius: 'var(--radius-control)',
-                      border: `1px solid ${suficiente ? 'var(--color-border)' : 'var(--color-danger)'}`,
-                      backgroundColor: suficiente ? '#FFFFFF' : 'var(--bg-danger)'
-                    }}
-                  >
-                    <div>
-                      <strong style={{ color: 'var(--color-ink)' }}>{item.name}</strong>
-                      <div style={{ fontSize: 'var(--caption-size)', color: 'var(--color-muted)', marginTop: '2px' }}>
-                        Requerido: <strong>{item.cantidadRequerida} {ingCompleto?.unit}</strong> | En almacén:{' '}
-                        <strong>{item.disponible} {ingCompleto?.unit}</strong>
-                      </div>
-                    </div>
-
-                    <div style={{ textAlign: 'right' }}>
-                      <Badge variant={suficiente ? 'success' : 'danger'}>
-                        {suficiente ? `${item.porcionesPosibles} porciones max` : 'Insuficiente'}
-                      </Badge>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '12px' }}>
-              <Button variant="primary" onClick={handleCerrarModal}>
-                Cerrar detalle
-              </Button>
-            </div>
-          </div>
-        )}
-      </Modal>
+      {/* Modal de Confirmación de Eliminación */}
+      <ConfirmDeleteModal
+        isOpen={Boolean(recipeToDelete)}
+        onClose={() => setRecipeToDelete(null)}
+        onConfirm={handleConfirmDelete}
+        recipe={recipeToDelete}
+        loading={saving}
+      />
     </div>
   );
 }
