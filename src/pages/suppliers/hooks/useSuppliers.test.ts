@@ -206,4 +206,69 @@ describe('useSuppliers', () => {
       expect(result.current.message).toBeNull();
     });
   });
+
+    describe('filtros', () => {
+    const SUPPLIER_A = {
+      id: 'prov-1',
+      name: 'Molinos del Valle',
+      contactName: 'María López',
+      phone: '+52 999 111 2233',
+      email: 'ventas@molinos.com',
+    };
+    const SUPPLIER_B = {
+      id: 'prov-2',
+      name: 'Lácteos del Mayab',
+      contactName: 'Pedro Ruiz',
+      phone: '+52 999 222 3344',
+      email: 'pedidos@lacteosmayab.mx',
+    };
+
+    beforeEach(() => {
+      repo.list.mockResolvedValue([SUPPLIER_A, SUPPLIER_B]);
+    });
+
+    it('sin búsqueda devuelve todos los proveedores', async () => {
+      const { result } = renderHook(() => useSuppliers());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      expect(result.current.filteredSuppliers).toHaveLength(2);
+    });
+
+    it('filtra por nombre', async () => {
+      const { result } = renderHook(() => useSuppliers());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      act(() => result.current.updateFilters({ search: 'molinos' }));
+
+      expect(result.current.filteredSuppliers).toHaveLength(1);
+      expect(result.current.filteredSuppliers[0].id).toBe('prov-1');
+    });
+
+    it('filtra por contacto, teléfono o email', async () => {
+      const { result } = renderHook(() => useSuppliers());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      act(() => result.current.updateFilters({ search: 'pedro' }));
+      expect(result.current.filteredSuppliers).toHaveLength(1);
+      expect(result.current.filteredSuppliers[0].id).toBe('prov-2');
+
+      act(() => result.current.updateFilters({ search: '111 2233' }));
+      expect(result.current.filteredSuppliers).toHaveLength(1);
+      expect(result.current.filteredSuppliers[0].id).toBe('prov-1');
+
+      act(() => result.current.updateFilters({ search: 'lacteosmayab' }));
+      expect(result.current.filteredSuppliers).toHaveLength(1);
+      expect(result.current.filteredSuppliers[0].id).toBe('prov-2');
+    });
+
+    it('devuelve [] si no hay coincidencias', async () => {
+      const { result } = renderHook(() => useSuppliers());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      act(() => result.current.updateFilters({ search: 'inexistente' }));
+
+      expect(result.current.filteredSuppliers).toHaveLength(0);
+    });
+  });
+  
 });

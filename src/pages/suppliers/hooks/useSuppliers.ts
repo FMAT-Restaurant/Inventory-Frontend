@@ -1,7 +1,7 @@
 /**
  * Hook que encapsula la lógica de negocio y el acceso a datos del dominio
- * de proveedores. La vista (que construirá otro equipo) solo consume su
- * resultado, igual que `useIngredients` hace para la vista de ingredientes.
+ * de proveedores. La vista solo consume su resultado, igual que
+ * `useIngredients` / `useBatches` hacen para sus respectivas vistas.
  *
  * Patrón:
  *   View (JSX) → useSuppliers() → suppliersRepository → HTTP | mock
@@ -10,19 +10,20 @@
  *   - Carga inicial de suppliers en el mount.
  *   - No hay `subscribe`: si otro componente muta suppliers por fuera,
  *     este hook no se entera. Es adecuado para suppliers porque hoy no
- *     hay otras vistas que muten datos, y añadir reactividad tiene coste
- *     (polling, o instrumentar el mock) sin beneficio claro.
+ *     hay otras vistas que muten datos.
  *   - `save()` valida el input (name obligatorio, email formato válido),
  *     decide create vs update según `input.id`, y recarga.
  *   - `remove()` llama al repo y recarga.
+ *   - `filters.search` filtra `filteredSuppliers` por
+ *     `name`, `contactName`, `phone`, `email` (case-insensitive).
  *   - Errores del repo se propagan como `Error` y se setean en `error`.
  *
- * Consistencia con `useIngredients`: mismos nombres de estado
- * (`loading`, `saving`, `error`, `message`), misma convención de `save`
- * unificado (create si no hay `id`, update si lo hay).
+ * Consistencia con `useIngredients` / `useBatches`: mismos nombres de
+ * estado (`loading`, `saving`, `error`, `message`), misma convención de
+ * `save` unificado (create si no hay `id`, update si lo hay).
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { suppliersRepository } from '../../../services/suppliers';
 import type {
   Supplier,
@@ -30,26 +31,19 @@ import type {
   SupplierUpdateInput,
 } from '../../../services/suppliers';
 
-/**
- * Input de `save`. Si viene `id`, es un update; si no, un create.
- * `id` se separa del `SupplierInput` porque el tipo del frontend lo
- * mantiene limpio (el backend lo genera en Mongo).
- */
 export type SaveSupplierInput = SupplierInput & { id?: string };
 
-/**
- * Resultado del hook. La vista usa:
- *   - `suppliers`: para renderizar el listado.
- *   - `loading`: para spinner / skeleton.
- *   - `saving`: para deshabilitar botones mientras se guarda.
- *   - `error` / `message`: para banners.
- *   - `save` / `remove`: para acciones.
- *   - `clearMessage`: para limpiar banners al abrir modales.
- *   - `reload`: para forzar recarga (rara vez se necesita, pero es útil
- *     si la vista quiere un botón "refrescar").
- */
+export interface SupplierFilters {
+  search: string;
+}
+
+const INITIAL_FILTERS: SupplierFilters = { search: '' };
+
 export interface UseSuppliersResult {
   suppliers: Supplier[];
+  filteredSuppliers: Supplier[];
+  filters: SupplierFilters;
+  updateFilters: (partial: Partial<SupplierFilters>) => void;
   loading: boolean;
   saving: boolean;
   error: string | null;
@@ -60,24 +54,11 @@ export interface UseSuppliersResult {
   remove: (id: string) => Promise<void>;
 }
 
-/**
- * Validación de frontend. Se hace ANTES de llamar al repo para dar
- * feedback inmediato sin round-trip. El backend vuelve a validar
- * (ValidationPipe), así que esto es UX, no seguridad.
- *
- * Reglas:
- *   - `name`: obligatorio, no vacío tras trim.
- *   - `email`: si viene, debe parecer un email válido (regex simple).
- *   - `phone`: si viene, no forzamos formato (el backend no lo hace).
- */
 function validateSupplierInput(input: SaveSupplierInput): string | null {
   if (!input.name || !input.name.trim()) {
     return 'El nombre del proveedor es obligatorio.';
   }
   if (input.email !== undefined && input.email !== null && input.email !== '') {
-    // Regex estándar simplificado. No cubre todos los emails válidos del
-    // RFC 5322, pero sí el 99% de los que un usuario escribe. El backend
-    // tiene la palabra final con @IsEmail().
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(input.email)) {
       return 'El correo electrónico no tiene un formato válido.';
@@ -86,11 +67,6 @@ function validateSupplierInput(input: SaveSupplierInput): string | null {
   return null;
 }
 
-/**
- * Convierte un `Error` arbitrario a string. Mismo helper que usa
- * `useIngredients` (`errorMessage`), replicado aquí para no importar
- * desde `pages/ingredients/`.
- */
 function errorMessage(err: unknown, fallback: string): string {
   return err instanceof Error && err.message ? err.message : fallback;
 }
@@ -101,6 +77,7 @@ export function useSuppliers(): UseSuppliersResult {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [filters, setFilters] = useState<SupplierFilters>(INITIAL_FILTERS);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -137,9 +114,6 @@ export function useSuppliers(): UseSuppliersResult {
       try {
         let saved: Supplier;
         if (input.id) {
-          // Update: separamos id del payload. `SupplierUpdateInput` acepta
-          // cualquier subconjunto de SupplierInput, así que solo pasamos
-          // los campos editables.
           const { id, ...payload } = input;
           saved = await suppliersRepository.update(
             id,
@@ -185,8 +159,26 @@ export function useSuppliers(): UseSuppliersResult {
     [suppliers, reload],
   );
 
+  const updateFilters = useCallback((partial: Partial<SupplierFilters>) => {
+    setFilters((prev) => ({ ...prev, ...partial }));
+  }, []);
+
+  const filteredSuppliers = useMemo(() => {
+    const search = filters.search.trim().toLowerCase();
+    if (!search) return suppliers;
+    return suppliers.filter((s) => {
+      const haystack = [s.name, s.contactName, s.phone, s.email]
+        .filter((v): v is string => typeof v === 'string' && v.length > 0)
+        .map((v) => v.toLowerCase());
+      return haystack.some((v) => v.includes(search));
+    });
+  }, [suppliers, filters.search]);
+
   return {
     suppliers,
+    filteredSuppliers,
+    filters,
+    updateFilters,
     loading,
     saving,
     error,
