@@ -25,8 +25,8 @@ jobs:
       FRONTEND_URL: http://localhost:5173
       NODE_ENV: qa
       PORT: 3000
-      # RABBITMQ_URL puede dejarse vacío o usar secreto si aplica; backend lo lee
-      RABBITMQ_URL: ${{ secrets.RABBITMQ_URL }}
+      # RABBITMQ_URL con valor por defecto si el secreto no está configurado en el repo
+      RABBITMQ_URL: ${{ secrets.RABBITMQ_URL || 'amqp://admin:supersecurepassword@host.docker.internal:5672' }}
 
     steps:
       - name: Checkout Frontend
@@ -58,7 +58,7 @@ jobs:
           PORT=${{ env.PORT }}
           FRONTEND_URL=${{ env.FRONTEND_URL }}
           NODE_ENV=${{ env.NODE_ENV }}
-          RABBITMQ_URL=${{ env.RABBITMQ_URL }}
+          RABBITMQ_URL=${{ env.RABBITMQ_URL || 'amqp://admin:supersecurepassword@host.docker.internal:5672' }}
           EOF
 
       - name: Start Backend (Docker Compose)
