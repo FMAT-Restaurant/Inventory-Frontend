@@ -9,16 +9,30 @@
 import { mockService } from '../inventory/mockService.js';
 import type { Ingredient, IngredientsRepository, Supplier } from './types';
 
+/**
+ * Normaliza un ingrediente del almacén en memoria para que siempre tenga
+ * la forma que espera la UI, aunque el dato seed no traiga los campos
+ * opcionales (descripción, perecedero, condición de almacenamiento).
+ */
+function normalizeIngredient(item: Record<string, unknown>): Ingredient {
+  return {
+    ...item,
+    description: item.description ?? '',
+    isPerishable: item.isPerishable ?? false,
+    storageCondition: item.storageCondition ?? '',
+  } as Ingredient;
+}
+
 export const mockIngredientsRepository: IngredientsRepository = {
   async list(): Promise<Ingredient[]> {
     const items = await mockService.getIngredientes();
-    return (items as unknown as Ingredient[]).map(item => ({ ...item }));
+    return (items as unknown as Record<string, unknown>[]).map(normalizeIngredient);
   },
 
   async getById(id: string): Promise<Ingredient | null> {
     try {
       const ingredient = await mockService.getIngredientePorId(id);
-      return ingredient ? ({ ...ingredient } as unknown as Ingredient) : null;
+      return ingredient ? normalizeIngredient(ingredient as unknown as Record<string, unknown>) : null;
     } catch {
       return null;
     }

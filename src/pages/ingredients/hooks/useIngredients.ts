@@ -17,11 +17,17 @@ const INITIAL_FILTERS: IngredientFilters = {
 };
 
 export function validateIngredientInput(input: IngredientInput): string | null {
+  if (!input.sku || !input.sku.trim()) {
+    return "El SKU del ingrediente es obligatorio.";
+  }
   if (!input.name || !input.name.trim()) {
     return "El nombre del ingrediente es obligatorio.";
   }
   if (!input.unit || !input.unit.trim()) {
     return "Selecciona una unidad de medida.";
+  }
+  if (!input.storageCondition || !input.storageCondition.trim()) {
+    return "Selecciona la condición de almacenamiento.";
   }
   if (Number.isNaN(Number(input.minStock)) || Number(input.minStock) < 0) {
     return "El umbral mínimo debe ser 0 o mayor.";
@@ -154,8 +160,14 @@ export function useIngredients() {
     return ingredients.filter((ingredient) => {
       const name = (ingredient.name || "").toLowerCase();
       const category = (ingredient.category || "").toLowerCase();
+      const sku = (ingredient.sku || "").toLowerCase();
+      const description = (ingredient.description || "").toLowerCase();
       const matchesSearch =
-        search === "" || name.includes(search) || category.includes(search);
+        search === "" ||
+        name.includes(search) ||
+        category.includes(search) ||
+        sku.includes(search) ||
+        description.includes(search);
 
       if (!matchesSearch) return false;
       if (filters.category === "TODAS") return true;

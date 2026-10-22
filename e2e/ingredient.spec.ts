@@ -3,15 +3,35 @@ import { test, expect, type Page } from "@playwright/test";
 const CREATE_NAME = "Harina de Prueba E2E";
 const CANCEL_NAME = "Ingrediente a Cancelar E2E";
 const DELETE_NAME = "Ingrediente a Eliminar E2E";
+const EXPAND_NAME = "Ingrediente Expandible E2E";
 
-const SEARCH_PLACEHOLDER = "Buscar por nombre o categoría...";
+const CREATE_SKU = "ING-E2E-01";
+const CANCEL_SKU = "ING-E2E-02";
+const DELETE_SKU = "ING-E2E-03";
+const EXPAND_SKU = "ING-E2E-04";
+
+const SEARCH_PLACEHOLDER = "Buscar por nombre, SKU o categoría...";
+
+/**
+ * El backend mantiene índices únicos en `name` y `sku` incluso para los
+ * ingredientes dados de baja lógica, así que cada proyecto de navegador
+ * usa su propio nombre y SKU para poder coexistir en la misma base.
+ */
+function uniqueName(base: string, project: string) {
+  return `${base} ${project}`;
+}
+
+function uniqueSku(base: string, project: string) {
+  return `${base}-${project}`;
+}
 
 async function goToIngredients(page: Page) {
   await page.goto("./");
 
+  /* El primer render del dev server puede tardar (arranque en frío) */
   await expect(
     page.getByRole("heading", { name: "Inventario", level: 1 }),
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 30_000 });
 
   await page
     .getByRole("heading", { name: "Ingredientes", exact: true, level: 2 })
@@ -23,9 +43,26 @@ async function goToIngredients(page: Page) {
 }
 
 function cardOf(page: Page, name: string) {
-  return page.locator(".grid-responsive > *", {
+  return page.locator(".ingredient-card", {
     has: page.getByRole("heading", { name, level: 3 }),
   });
+}
+
+/** Cabecera clicable de la card, responsable de expandir/contraer el detalle. */
+function cardHeader(page: Page, name: string) {
+  return cardOf(page, name).locator('[role="button"][aria-expanded]');
+}
+
+async function expandCard(page: Page, name: string) {
+  const header = cardHeader(page, name);
+  await header.click();
+  await expect(header).toHaveAttribute("aria-expanded", "true");
+}
+
+async function collapseCard(page: Page, name: string) {
+  const header = cardHeader(page, name);
+  await header.click();
+  await expect(header).toHaveAttribute("aria-expanded", "false");
 }
 
 async function confirmDelete(
@@ -34,7 +71,9 @@ async function confirmDelete(
   action: "accept" | "dismiss",
 ) {
   const dialogPromise = page.waitForEvent("dialog");
-  const clickPromise = card.getByRole("button", { name: "Eliminar" }).click();
+  const clickPromise = card
+    .getByRole("button", { name: "Eliminar", exact: true })
+    .click();
 
   const dialog = await dialogPromise;
   const message = dialog.message();
@@ -52,7 +91,12 @@ async function deleteIfExists(page: Page, name: string) {
   await expect(card).toHaveCount(0);
 }
 
-async function createIngredient(page: Page, name: string) {
+async function createIngredient(
+  page: Page,
+  name: string,
+  sku: string,
+  description = "",
+) {
   await deleteIfExists(page, name);
 
   await page.getByRole("button", { name: "Nuevo ingrediente" }).click();
@@ -60,10 +104,18 @@ async function createIngredient(page: Page, name: string) {
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
 
+  await dialog.getByLabel("SKU").fill(sku);
   await dialog.getByLabel("Nombre").fill(name);
+  if (description) {
+    await dialog.getByLabel("Descripción").fill(description);
+  }
   await dialog.getByLabel("Categoría").fill("Abarrotes");
   await dialog.getByLabel("Unidad de medida").selectOption("kg");
   await dialog.getByLabel("Umbral mínimo").fill("10");
+  await dialog.getByLabel("Perecedero").selectOption("false");
+  await dialog
+    .getByLabel("Condición de almacenamiento")
+    .selectOption("Refrigerado");
 
   await dialog.getByRole("button", { name: "Agregar ingrediente" }).click();
 
@@ -87,34 +139,49 @@ async function shoot(page: Page, file: string) {
 test.describe("IngredientesPage", () => {
   test("Desde el home entra a Ingredientes y crea un nuevo ingrediente", async ({
     page,
-  }) => {
+  }, testInfo) => {
+    const name = uniqueName(CREATE_NAME, testInfo.project.name);
+    const sku = uniqueSku(CREATE_SKU, testInfo.project.name);
+
     await goToIngredients(page);
-    await createIngredient(page, CREATE_NAME);
+    await createIngredient(
+      page,
+      name,
+      sku,
+      "Harina de trigo para validar el flujo E2E.",
+    );
 
     // Catálogo filtrado: solo se ve el ingrediente recién creado
     await filterBy(page, "Prueba");
-    await expect(cardOf(page, CREATE_NAME)).toBeVisible();
+    await expect(cardOf(page, name)).toBeVisible();
+
+    // El SKU se ve al expandir la card del catálogo
+    await expandCard(page, name);
+    await expect(cardOf(page, name).getByText(sku)).toBeVisible();
 
     await shoot(page, "crear-ingrediente.png");
   });
 
   test("Eliminar un ingrediente y cancelar mantiene el catálogo", async ({
     page,
-  }) => {
+  }, testInfo) => {
+    const name = uniqueName(CANCEL_NAME, testInfo.project.name);
+    const sku = uniqueSku(CANCEL_SKU, testInfo.project.name);
+
     await goToIngredients(page);
-    await createIngredient(page, CANCEL_NAME);
+    await createIngredient(page, name, sku);
 
     await filterBy(page, "Cancelar");
-    const card = cardOf(page, CANCEL_NAME);
+    const card = cardOf(page, name);
     await expect(card).toBeVisible();
 
     const message = await confirmDelete(page, card, "dismiss");
-    expect(message).toContain(CANCEL_NAME);
+    expect(message).toContain(name);
 
     // Sigue en el catálogo y no hay mensaje de éxito
     await expect(card).toHaveCount(1);
     await expect(
-      page.getByText(`Ingrediente "${CANCEL_NAME}" eliminado`),
+      page.getByText(`Ingrediente "${name}" eliminado`),
     ).toBeHidden();
 
     await shoot(page, "eliminar-ingrediente-cancelar.png");
@@ -122,23 +189,64 @@ test.describe("IngredientesPage", () => {
 
   test("Eliminar un ingrediente y aceptar lo quita del catálogo", async ({
     page,
-  }) => {
+  }, testInfo) => {
+    const name = uniqueName(DELETE_NAME, testInfo.project.name);
+    const sku = uniqueSku(DELETE_SKU, testInfo.project.name);
+
     await goToIngredients(page);
-    await createIngredient(page, DELETE_NAME);
+    await createIngredient(page, name, sku);
 
     await filterBy(page, "Eliminar");
-    const card = cardOf(page, DELETE_NAME);
+    const card = cardOf(page, name);
     await expect(card).toBeVisible();
 
     const message = await confirmDelete(page, card, "accept");
-    expect(message).toContain(DELETE_NAME);
+    expect(message).toContain(name);
 
     await expect(card).toHaveCount(0);
     await expect(
-      page.getByText(`Ingrediente "${DELETE_NAME}" eliminado del catálogo.`),
+      page.getByText(`Ingrediente "${name}" eliminado del catálogo.`),
     ).toBeVisible();
 
     await shoot(page, "eliminar-ingrediente-aceptar.png");
+  });
+
+  test("La card de ingrediente se expande y colapsa mostrando todo el detalle", async ({
+    page,
+  }, testInfo) => {
+    const name = uniqueName(EXPAND_NAME, testInfo.project.name);
+    const sku = uniqueSku(EXPAND_SKU, testInfo.project.name);
+
+    await goToIngredients(page);
+    await createIngredient(
+      page,
+      name,
+      sku,
+      "Detalle para validar la expansión de la card.",
+    );
+
+    await filterBy(page, "Expandible");
+    const card = cardOf(page, name);
+    await expect(card).toBeVisible();
+
+    // Cerrada: solo nombre y disponible/mínimo, sin el detalle
+    await expect(cardHeader(page, name)).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+    await expect(card.getByText(sku)).toBeHidden();
+
+    // Abierta: se muestra todo el detalle
+    await expandCard(page, name);
+    await expect(card.getByText(sku)).toBeVisible();
+    await expect(
+      card.getByText("Detalle para validar la expansión de la card."),
+    ).toBeVisible();
+    await expect(card.getByText("Costo prom.:")).toBeVisible();
+
+    // Cerrada de nuevo: el detalle desaparece
+    await collapseCard(page, name);
+    await expect(card.getByText(sku)).toBeHidden();
   });
 });
 

@@ -117,7 +117,60 @@ async function runTests() {
   }
   console.log('✅ Test 7 superado (Estado reiniciado limpiamente).');
 
-  console.log('\n🎉 TODOS LOS 7 TESTS DE REGLAS DE NEGOCIO Y MOCK SERVICE PASARON EXITOSAMENTE.');
+  // Test 8: Catálogo de insumos (SKU único, descripción, perecedero y almacenamiento)
+  console.log('\n--- Test 8: SKU, descripción, perecedero y condición de almacenamiento ---');
+  const alta = await mockService.guardarIngrediente({
+    sku: 'ING-TEST-8',
+    name: 'Ingrediente de Prueba E2E',
+    description: 'Descripción opcional del ingrediente de prueba',
+    unit: 'kg',
+    minStock: 5,
+    category: 'Abarrotes',
+    isPerishable: true,
+    storageCondition: 'Refrigerado'
+  });
+
+  if (alta.sku !== 'ING-TEST-8' || !alta.description || !alta.isPerishable || alta.storageCondition !== 'Refrigerado') {
+    throw new Error(`Los campos nuevos no se guardaron correctamente: ${JSON.stringify(alta)}`);
+  }
+
+  let errorSkuDuplicado = '';
+  try {
+    await mockService.guardarIngrediente({
+      sku: 'ing-test-8',
+      name: 'Otro Ingrediente de Prueba',
+      unit: 'kg',
+      minStock: 1,
+      category: 'Abarrotes',
+      isPerishable: false,
+      storageCondition: 'Ambiente'
+    });
+  } catch (err) {
+    errorSkuDuplicado = err.message;
+  }
+  if (!errorSkuDuplicado.includes('SKU')) {
+    throw new Error(`Esperado error por SKU duplicado, recibido: "${errorSkuDuplicado}"`);
+  }
+
+  let errorSkuVacio = '';
+  try {
+    await mockService.guardarIngrediente({
+      name: 'Ingrediente sin SKU',
+      unit: 'kg',
+      minStock: 1,
+      category: 'Abarrotes',
+      isPerishable: false,
+      storageCondition: 'Ambiente'
+    });
+  } catch (err) {
+    errorSkuVacio = err.message;
+  }
+  if (!errorSkuVacio.includes('SKU')) {
+    throw new Error(`Esperado error por SKU vacío, recibido: "${errorSkuVacio}"`);
+  }
+  console.log('✅ Test 8 superado (SKU obligatorio y único, metadatos de almacenamiento persistidos).');
+
+  console.log('\n🎉 TODOS LOS 8 TESTS DE REGLAS DE NEGOCIO Y MOCK SERVICE PASARON EXITOSAMENTE.');
 }
 
 runTests().catch(err => {

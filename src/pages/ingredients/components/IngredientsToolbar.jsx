@@ -37,7 +37,7 @@ export function IngredientsToolbar({
         </div>
         <input
           type="text"
-          placeholder="Buscar por nombre o categoría..."
+          placeholder="Buscar por nombre, SKU o categoría..."
           value={search}
           onChange={e => onSearch(e.target.value)}
           style={{

@@ -124,7 +124,7 @@ export function PlusIcon({ size = 18, color = 'currentColor', className = '' }) 
   );
 }
 
-export function ChevronDownIcon({ size = 18, color = 'currentColor', className = '' }) {
+export function ChevronDownIcon({ size = 18, color = 'currentColor', className = '', style = {} }) {
   return (
     <svg
       width={size}
@@ -136,6 +136,7 @@ export function ChevronDownIcon({ size = 18, color = 'currentColor', className =
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
+      style={style}
     >
       <path d="m6 9 6 6 6-6" />
     </svg>

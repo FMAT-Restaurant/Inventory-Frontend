@@ -4,14 +4,18 @@
  * Contrato REST asumido (base = VITE_API_URL):
  *   GET    /ingredients          -> Ingrediente[]
  *   GET    /ingredients/:id      -> Ingrediente
- *   POST   /ingredients          (IngredienteInput) -> Ingrediente
- *   PUT    /ingredients/:id      (IngredienteInput) -> Ingrediente
- *   DELETE /ingredients/:id      -> 204
+ *   POST   /ingredients          (CreateIngredientDto) -> Ingrediente
+ *   PATCH  /ingredients/:id      (Partial<CreateIngredientDto>) -> Ingrediente
+ *   DELETE /ingredients/:id      -> Ingrediente desactivado
  *   GET    /suppliers            -> Proveedor[]
+ *
+ * Campos exigidos por el backend: sku, name, category, unit, minStock y
+ * storageCondition. Opcionales: description, isPerishable, averageCost y
+ * supplierIdSugested.
  */
 
 import { ENV } from "../../config/env";
-import type { Ingredient, IngredientsRepository, Supplier } from "./types";
+import type { Ingredient, IngredientInput, IngredientsRepository, Supplier } from "./types";
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`${ENV.API_URL}${path}`, {
@@ -45,14 +49,60 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return JSON.parse(raw) as T;
 }
 
+/**
+ * Construye el payload del backend a partir del formulario de la UI.
+ * Se descartan los campos opcionales vacíos para no enviar datos sin sentido.
+ */
+function toPayload(input: IngredientInput): Record<string, unknown> {
+  const payload: Record<string, unknown> = {
+    sku: input.sku.trim(),
+    name: input.name.trim(),
+    description: input.description?.trim() ?? "",
+    category: input.category.trim() || "General",
+    unit: input.unit.trim(),
+    minStock: input.minStock,
+    isPerishable: Boolean(input.isPerishable),
+    storageCondition: input.storageCondition.trim(),
+    supplierIdSugested: input.supplierIdSugested || null,
+  };
+
+  if (input.averageCost !== undefined && input.averageCost > 0) {
+    payload.averageCost = input.averageCost;
+  }
+
+  return payload;
+}
+
+/**
+ * Normaliza la respuesta del backend para que la UI siempre reciba
+ * los mismos campos, sin importar si el servidor omitió opcionales.
+ */
+function normalizeIngredient(item: Ingredient & { _id?: string }): Ingredient {
+  return {
+    ...item,
+    id: item.id || item._id || "",
+    description: item.description ?? "",
+    isPerishable: item.isPerishable ?? false,
+    storageCondition: item.storageCondition ?? "",
+    category: item.category || "General",
+    averageCost: item.averageCost ?? 0,
+    supplierIdSugested: item.supplierIdSugested ?? null,
+    totalStock: item.totalStock ?? 0,
+    reservedStock: item.reservedStock ?? 0,
+    availableStock: item.availableStock ?? 0,
+  };
+}
+
 export const httpIngredientsRepository: IngredientsRepository = {
-  list() {
-    return request<Ingredient[]>("/ingredients");
+  async list() {
+    const items = await request<(Ingredient & { _id?: string })[]>("/ingredients");
+    return items.map(normalizeIngredient);
   },
 
   async getById(id) {
     try {
-      return await request<Ingredient>(`/ingredients/${id}`);
+      const item = await request<Ingredient & { _id?: string }>(`/ingredients/${id}`);
+      return normalizeIngredient(item);
     } catch {
       return null;
     }
@@ -61,14 +111,14 @@ export const httpIngredientsRepository: IngredientsRepository = {
   create(input) {
     return request<Ingredient>("/ingredients", {
       method: "POST",
-      body: JSON.stringify(input),
+      body: JSON.stringify(toPayload(input)),
     });
   },
 
   update(id, input) {
     return request<Ingredient>(`/ingredients/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(input),
+      method: "PATCH",
+      body: JSON.stringify(toPayload(input)),
     });
   },
 

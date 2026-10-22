@@ -24,9 +24,9 @@ jobs:
       MONGO_INITDB_DATABASE: inventory
       FRONTEND_URL: http://localhost:5173
       NODE_ENV: qa
-      PORT: 3000
-      # RABBITMQ_URL con valor por defecto si el secreto no está configurado en el repo
-      RABBITMQ_URL: ${{ secrets.RABBITMQ_URL || 'amqp://admin:supersecurepassword@host.docker.internal:5672' }}
+      PORT: 8083
+      APP_HOST_PORT: 8083
+      RABBITMQ_URL: ${{ secrets.RABBITMQ_URL }}
 
     steps:
       - name: Checkout Frontend
@@ -56,9 +56,10 @@ jobs:
           MONGO_INITDB_DATABASE=${{ env.MONGO_INITDB_DATABASE }}
           MONGODB_URI=mongodb://${{ env.MONGO_INITDB_ROOT_USERNAME }}:${{ env.MONGO_INITDB_ROOT_PASSWORD }}@db:27017/${{ env.MONGO_INITDB_DATABASE }}?authSource=admin
           PORT=${{ env.PORT }}
+          APP_HOST_PORT=${{ env.APP_HOST_PORT }}
           FRONTEND_URL=${{ env.FRONTEND_URL }}
           NODE_ENV=${{ env.NODE_ENV }}
-          RABBITMQ_URL=${{ env.RABBITMQ_URL || 'amqp://admin:supersecurepassword@host.docker.internal:5672' }}
+          RABBITMQ_ENABLED=${{ env.RABBITMQ_ENABLED }}
           EOF
 
       - name: Start Backend (Docker Compose)
@@ -70,8 +71,8 @@ jobs:
       - name: Wait for Backend HTTP readiness
         run: |
           for i in {1..60}; do
-            if curl -fsS "http://localhost:3000/" >/dev/null; then
-              echo "Backend ready at :3000"
+            if curl -fsS "http://localhost:8083/" >/dev/null; then
+              echo "Backend ready at :8083"
               exit 0
             fi
             echo "Waiting backend... ($i/60)"
@@ -87,7 +88,7 @@ jobs:
           cat > .env << 'EOF'
           VITE_APP_ENV=qa
           VITE_USE_MOCK=false
-          VITE_API_URL=http://localhost:3000
+          VITE_API_URL=http://localhost:8083
           EOF
 
       - name: Install Frontend dependencies
