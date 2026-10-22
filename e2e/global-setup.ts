@@ -1,4 +1,5 @@
 import type { FullConfig } from "@playwright/test";
+import { loadEnv } from "vite";
 
 /**
  * Reset de la base de datos antes de ejecutar la suite E2E.
@@ -11,8 +12,19 @@ import type { FullConfig } from "@playwright/test";
  * Si el endpoint no está disponible (por ejemplo, en un ambiente donde el
  * guard de test no permite el reset) se avisa y la suite continúa.
  */
+const fileEnv = loadEnv("development", process.cwd(), "");
+
+/**
+ * Debe apuntar al mismo backend que consume la app (`VITE_API_URL`).
+ * Playwright no carga `.env` por sí solo, por eso se lee con `loadEnv`:
+ * de lo contrario el reset pega al fallback y la base queda con datos
+ * de corridas anteriores (el soft delete bloquea nombre y SKU).
+ */
 const API_URL =
-  process.env.E2E_API_URL ?? process.env.VITE_API_URL ?? "http://localhost:3000";
+  process.env.E2E_API_URL ??
+  process.env.VITE_API_URL ??
+  fileEnv.VITE_API_URL ??
+  "http://localhost:3000";
 
 export default async function globalSetup(_config: FullConfig) {
   const url = `${API_URL}/apo/test/reset`;

@@ -71,7 +71,9 @@ async function confirmDelete(
   action: "accept" | "dismiss",
 ) {
   const dialogPromise = page.waitForEvent("dialog");
-  const clickPromise = card.getByRole("button", { name: "Eliminar" }).click();
+  const clickPromise = card
+    .getByRole("button", { name: "Eliminar", exact: true })
+    .click();
 
   const dialog = await dialogPromise;
   const message = dialog.message();
