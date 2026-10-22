@@ -26,7 +26,7 @@ jobs:
       NODE_ENV: qa
       PORT: 8083
       APP_HOST_PORT: 8083
-      RABBITMQ_ENABLED: 'false'
+      RABBITMQ_UERL: ${{ secrets.RABBITMQ_URL }}
 
     steps:
       - name: Checkout Frontend
