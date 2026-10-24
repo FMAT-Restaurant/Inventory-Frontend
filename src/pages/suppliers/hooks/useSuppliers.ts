@@ -1,26 +1,9 @@
 /**
  * Hook que encapsula la lógica de negocio y el acceso a datos del dominio
- * de proveedores. La vista solo consume su resultado, igual que
- * `useIngredients` / `useBatches` hacen para sus respectivas vistas.
+ * de proveedores. La vista solo consume su resultado.
  *
  * Patrón:
  *   View (JSX) → useSuppliers() → suppliersRepository → HTTP | mock
- *
- * Comportamiento:
- *   - Carga inicial de suppliers en el mount.
- *   - No hay `subscribe`: si otro componente muta suppliers por fuera,
- *     este hook no se entera. Es adecuado para suppliers porque hoy no
- *     hay otras vistas que muten datos.
- *   - `save()` valida el input (name obligatorio, email formato válido),
- *     decide create vs update según `input.id`, y recarga.
- *   - `remove()` llama al repo y recarga.
- *   - `filters.search` filtra `filteredSuppliers` por
- *     `name`, `contactName`, `phone`, `email` (case-insensitive).
- *   - Errores del repo se propagan como `Error` y se setean en `error`.
- *
- * Consistencia con `useIngredients` / `useBatches`: mismos nombres de
- * estado (`loading`, `saving`, `error`, `message`), misma convención de
- * `save` unificado (create si no hay `id`, update si lo hay).
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -54,15 +37,28 @@ export interface UseSuppliersResult {
   remove: (id: string) => Promise<void>;
 }
 
+/**
+ * Regex de email con cuantificadores acotados para evitar backtracking
+ * super-lineal (SonarCloud: "Simplify this regular expression to reduce
+ * its runtime, as it has super-linear performance due to backtracking").
+ *
+ * Límites:
+ *   - Local part: 1-64 caracteres (límite RFC 5321).
+ *   - Dominio: 1-255 caracteres.
+ *   - TLD: 2+ caracteres.
+ * Esto cumple el 99% de los emails reales sin riesgo de ReDoS.
+ */
+const EMAIL_REGEX = /^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{2,}$/;
+
 function validateSupplierInput(input: SaveSupplierInput): string | null {
-  if (!input.name || !input.name.trim()) {
+  if (!input.name?.trim()) {
     return 'El nombre del proveedor es obligatorio.';
   }
-  if (input.email !== undefined && input.email !== null && input.email !== '') {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(input.email)) {
-      return 'El correo electrónico no tiene un formato válido.';
-    }
+  // Optional chaining + trim (SonarCloud: "Prefer using an optional chain
+  // expression instead, as it's more concise and easier to read").
+  const email = input.email?.trim();
+  if (email && !EMAIL_REGEX.test(email)) {
+    return 'El correo electrónico no tiene un formato válido.';
   }
   return null;
 }

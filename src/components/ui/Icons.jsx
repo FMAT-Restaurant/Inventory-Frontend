@@ -311,6 +311,7 @@ export function TruckIcon({ size = 18, color = 'currentColor', className = '' })
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
+      aria-hidden="true"
     >
       <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" />
       <path d="M15 18H9" />

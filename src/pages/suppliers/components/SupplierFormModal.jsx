@@ -13,6 +13,15 @@ export function SupplierFormModal({
 }) {
   const isEditing = Boolean(values.id);
 
+  // Ternario anidado extraído a variable para legibilidad
+  // (SonarCloud: "Extract this nested ternary operation into an
+  // independent statement").
+  const submitLabel = saving
+    ? 'Guardando...'
+    : isEditing
+      ? 'Guardar cambios'
+      : 'Agregar proveedor';
+
   return (
     <Modal
       isOpen={isOpen}
@@ -93,11 +102,7 @@ export function SupplierFormModal({
             Cancelar
           </Button>
           <Button variant="primary" type="submit" disabled={saving}>
-            {saving
-              ? 'Guardando...'
-              : isEditing
-                ? 'Guardar cambios'
-                : 'Agregar proveedor'}
+            {submitLabel}
           </Button>
         </div>
       </form>

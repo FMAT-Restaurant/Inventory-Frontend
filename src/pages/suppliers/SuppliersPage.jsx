@@ -87,20 +87,32 @@ export function SuppliersPage() {
     }
   };
 
+  // Textos y estilos del banner extraídos a variables para no anidar
+  // ternarios en el JSX (SonarCloud: "Extract this nested ternary
+  // operation into an independent statement").
+  const bannerVisible = !modalOpen && (error || message);
+  const bannerBackground = error ? 'var(--bg-danger)' : 'var(--bg-success)';
+  const bannerColor = error ? 'var(--color-danger)' : 'var(--color-success)';
+  const bannerText = error || message;
+
+  const deleteModalMessage = supplierToDelete
+    ? `¿Estás seguro de que deseas eliminar al proveedor "${supplierToDelete.name}"? Esta acción no se puede deshacer.`
+    : '';
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      {!modalOpen && (error || message) && (
+      {bannerVisible && (
         <div
           style={{
             padding: '12px 16px',
             borderRadius: 'var(--radius-control)',
             fontSize: 'var(--small-size)',
             fontWeight: 500,
-            backgroundColor: error ? 'var(--bg-danger)' : 'var(--bg-success)',
-            color: error ? 'var(--color-danger)' : 'var(--color-success)',
+            backgroundColor: bannerBackground,
+            color: bannerColor,
           }}
         >
-          {error || message}
+          {bannerText}
         </div>
       )}
 
@@ -144,11 +156,7 @@ export function SuppliersPage() {
         onClose={closeDeleteModal}
         onConfirm={handleConfirmDelete}
         title="Eliminar Proveedor"
-        message={
-          supplierToDelete
-            ? `¿Estás seguro de que deseas eliminar al proveedor "${supplierToDelete.name}"? Esta acción no se puede deshacer.`
-            : ''
-        }
+        message={deleteModalMessage}
         confirmLabel="Eliminar proveedor"
         cancelLabel="Cancelar"
         variant="destructive"

@@ -9,20 +9,16 @@
  *   DELETE /suppliers/:id      -> void             (200) | 404
  *
  * El backend devuelve `_id` (ObjectId de Mongo) y `__v` (versión de Mongoose).
- * Este repositorio NORMALIZA la respuesta: `_id -> id`, descarta `__v`, y
- * convierte cualquier respuesta en un objeto `Supplier` del frontend.
+ * Este repositorio NORMALIZA la respuesta: `_id -> id`, descarta `__v`.
  *
  * El backend responde errores con la forma:
  *   { statusCode: number, message: string | string[], error: string }
- * `request()` extrae `message` para propagarlo como `Error.message`, que es
- * lo que la UI muestra al usuario.
  *
- * ─────────────────────────────────────────────────────────────────────
- * TODO(refactor): extraer `request<T>` a `services/http/request.ts` cuando
- * `services/ingredients/httpIngredientsRepository.ts` y este archivo estén
- * estables en `main`, para eliminar la duplicación (~30 líneas). Coordinar
- * con el dueño del dominio `ingredients` antes de mover el archivo.
- * ─────────────────────────────────────────────────────────────────────
+ * Deuda técnica conocida:
+ *   La función `request()` está duplicada respecto a
+ *   `services/ingredients/httpIngredientsRepository.ts`. Está previsto
+ *   extraerla a `services/http/request.ts` en un PR posterior, coordinado
+ *   con el dueño del dominio `ingredients`. Ver `README.md` del módulo.
  */
 
 import { ENV } from '../../config/env';
@@ -33,11 +29,6 @@ import type {
   SuppliersRepository,
 } from './types';
 
-/**
- * Forma CRUDA que devuelve el backend (antes de normalizar).
- * - `_id` es el ObjectId de Mongo serializado como string de 24 hex.
- * - `__v` es la versión interna de Mongoose (ruido para la UI).
- */
 interface RawSupplier {
   _id: string;
   name: string;
@@ -50,12 +41,6 @@ interface RawSupplier {
   __v?: number;
 }
 
-/**
- * Normaliza un documento del backend al tipo `Supplier` del frontend:
- * - `_id` -> `id`
- * - descarta `__v`
- * - conserva `createdAt`/`updatedAt` si vienen
- */
 function normalizeSupplier(raw: RawSupplier): Supplier {
   const { _id, __v, ...rest } = raw;
   return {
@@ -65,17 +50,9 @@ function normalizeSupplier(raw: RawSupplier): Supplier {
 }
 
 /**
- * Helper HTTP genérico. Duplicado a propósito desde
- * `services/ingredients/httpIngredientsRepository.ts` (ver TODO arriba).
- *
- * Reglas:
- * - Añade `Content-Type: application/json` en toda petición (incluida GET,
- *   para evitar problemas con proxies que exigen Content-Type).
- * - Si `response.ok` es false, intenta extraer `message` del body JSON del
- *   backend y lo lanza como `Error`. Si el body no es JSON, lanza un
- *   mensaje genérico con el status code.
- * - Si el status es 204, devuelve `undefined` (convención de `void`).
- * - En otro caso, parsea y devuelve el JSON.
+ * Helper HTTP genérico. Duplicado respecto a
+ * `services/ingredients/httpIngredientsRepository.ts`; ver deuda técnica
+ * documentada arriba.
  */
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`${ENV.API_URL}${path}`, {
@@ -125,8 +102,6 @@ export const httpSuppliersRepository: SuppliersRepository = {
       const raw = await request<RawSupplier>(`/suppliers/${id}`);
       return normalizeSupplier(raw);
     } catch {
-      // 404, id inválido, o cualquier error: devolvemos null para que la UI
-      // decida cómo manejar el "no encontrado" sin try/catch.
       return null;
     }
   },
@@ -140,7 +115,6 @@ export const httpSuppliersRepository: SuppliersRepository = {
   },
 
   async update(id: string, input: SupplierUpdateInput): Promise<Supplier> {
-    // PATCH (no PUT): el backend expone `@Patch(':id')`, no `@Put`.
     const raw = await request<RawSupplier>(`/suppliers/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(input),
