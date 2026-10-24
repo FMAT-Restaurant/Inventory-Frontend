@@ -13,11 +13,15 @@ export interface Supplier {
 
 export interface Ingredient {
   id: string;
+  sku: string;
   name: string;
+  description?: string;
   unit: string;
   minStock: number;
   averageCost: number;
   category: string;
+  isPerishable: boolean;
+  storageCondition: string;
   supplierIdSugested: string | null;
   supplierSugested?: Supplier | null;
   totalStock: number;
@@ -28,11 +32,15 @@ export interface Ingredient {
 
 export interface IngredientInput {
   id?: string;
+  sku: string;
   name: string;
+  description?: string;
   unit: string;
   minStock: number;
-  averageCost: number;
+  averageCost?: number;
   category: string;
+  isPerishable: boolean;
+  storageCondition: string;
   supplierIdSugested: string | null;
 }
 

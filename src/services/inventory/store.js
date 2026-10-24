@@ -97,12 +97,29 @@ class InventoryStore {
   }
 
   /**
+   * Normaliza el indicador de perecedero a booleano.
+   * Acepta booleanos y las cadenas "true"/"false" que llegan desde los formularios.
+   */
+  normalizarPerecedero(valor) {
+    if (valor === undefined || valor === null || valor === '') {
+      return false;
+    }
+    if (typeof valor === 'string') {
+      return valor.toLowerCase() === 'true';
+    }
+    return Boolean(valor);
+  }
+
+  /**
    * Crea o actualiza un ingrediente del catálogo (RF de catálogo de insumos).
    * Si `data.id` coincide con un ingrediente existente se actualiza; en caso contrario se crea.
    */
   guardarIngrediente(data = {}) {
     const name = (data.name || '').trim();
     const unit = (data.unit || '').trim();
+    const sku = (data.sku || '').trim();
+    const storageCondition = (data.storageCondition || '').trim();
+    const description = (data.description || '').trim();
 
     if (!name) {
       throw new Error('El nombre del ingrediente es obligatorio.');
@@ -110,6 +127,14 @@ class InventoryStore {
     if (!unit) {
       throw new Error('La unidad de medida es obligatoria.');
     }
+    if (!sku) {
+      throw new Error('El SKU del ingrediente es obligatorio.');
+    }
+    if (!storageCondition) {
+      throw new Error('La condición de almacenamiento es obligatoria.');
+    }
+
+    const isPerishable = this.normalizarPerecedero(data.isPerishable);
 
     const minStock = Number(data.minStock);
     const averageCost = data.averageCost === undefined ? 0 : Number(data.averageCost);
@@ -127,13 +152,24 @@ class InventoryStore {
       throw new Error(`Ya existe un ingrediente con el nombre "${name}".`);
     }
 
+    const duplicadoSku = this.ingredientes.find(
+      i => (i.sku || '').toLowerCase() === sku.toLowerCase() && i.id !== data.id
+    );
+    if (duplicadoSku) {
+      throw new Error(`Ya existe un ingrediente con el SKU "${sku}".`);
+    }
+
     const datosBase = {
+      sku,
       name,
+      description,
       unit,
       minStock: Number(minStock),
       averageCost: Number(averageCost),
       supplierIdSugested: data.supplierIdSugested || null,
-      category: (data.category || '').trim() || 'General'
+      category: (data.category || '').trim() || 'General',
+      isPerishable,
+      storageCondition
     };
 
     if (data.id) {

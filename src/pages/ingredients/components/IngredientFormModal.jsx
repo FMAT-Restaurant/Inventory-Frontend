@@ -1,7 +1,7 @@
 import { Button } from "../../../components/ui/Button.jsx";
 import { Input, Select } from "../../../components/ui/Input.jsx";
 import { Modal } from "../../../components/ui/Modal.jsx";
-import { UNIDADES } from "../constants.js";
+import { CONDICIONES_ALMACENAMIENTO, UNIDADES } from "../constants.js";
 
 export function IngredientFormModal({
   isOpen,
@@ -25,12 +25,35 @@ export function IngredientFormModal({
         onSubmit={onSubmit}
         style={{ display: "flex", flexDirection: "column", gap: "16px" }}
       >
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "12px",
+          }}
+        >
+          <Input
+            label="SKU"
+            placeholder="Ej. ING-0001"
+            value={values.sku}
+            onChange={(e) => onChange("sku", e.target.value)}
+            required
+          />
+          <Input
+            label="Nombre"
+            placeholder="Ej. Harina de Trigo Extra"
+            value={values.name}
+            onChange={(e) => onChange("name", e.target.value)}
+            required
+          />
+        </div>
+
         <Input
-          label="Nombre"
-          placeholder="Ej. Harina de Trigo Extra"
-          value={values.name}
-          onChange={(e) => onChange("name", e.target.value)}
-          required
+          label="Descripción"
+          placeholder="Ej. Harina de trigo extra panadera"
+          value={values.description}
+          onChange={(e) => onChange("description", e.target.value)}
+          helperText="Opcional. Detalle del producto para identificarlo en almacén."
         />
 
         <div
@@ -78,20 +101,48 @@ export function IngredientFormModal({
             onChange={(e) => onChange("minStock", e.target.value)}
             required
           />
+          <Select
+            label="Perecedero"
+            value={values.isPerishable ? "true" : "false"}
+            onChange={(e) => onChange("isPerishable", e.target.value === "true")}
+          >
+            <option value="true">Sí</option>
+            <option value="false">No</option>
+          </Select>
         </div>
 
-        <Select
-          label="Proveedor sugerido"
-          value={values.supplierIdSugested}
-          onChange={(e) => onChange("supplierIdSugested", e.target.value)}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "12px",
+          }}
         >
-          <option value="">Sin asignar</option>
-          {suppliers.map((prov) => (
-            <option key={prov.id} value={prov.id}>
-              {prov.name}
-            </option>
-          ))}
-        </Select>
+          <Select
+            label="Condición de almacenamiento"
+            value={values.storageCondition}
+            onChange={(e) => onChange("storageCondition", e.target.value)}
+            required
+          >
+            {CONDICIONES_ALMACENAMIENTO.map((condition) => (
+              <option key={condition} value={condition}>
+                {condition}
+              </option>
+            ))}
+          </Select>
+          <Select
+            label="Proveedor sugerido"
+            value={values.supplierIdSugested}
+            onChange={(e) => onChange("supplierIdSugested", e.target.value)}
+          >
+            <option value="">Sin asignar</option>
+            {suppliers.map((prov) => (
+              <option key={prov.id} value={prov.id}>
+                {prov.name}
+              </option>
+            ))}
+          </Select>
+        </div>
 
         {error && (
           <span
