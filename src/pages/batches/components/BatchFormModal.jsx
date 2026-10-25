@@ -1,6 +1,7 @@
 import { Button } from "../../../components/ui/Button.jsx";
 import { Input, Select } from "../../../components/ui/Input.jsx";
 import { Modal } from "../../../components/ui/Modal.jsx";
+import { formatBatchCode } from "../constants.js";
 
 export function BatchFormModal({
   isOpen,
@@ -17,6 +18,18 @@ export function BatchFormModal({
   const selectedIngredient = ingredients.find(
     (ing) => ing.id === values.ingredientId,
   );
+  const selectedSku = selectedIngredient?.sku || "";
+
+  const formatIngredientOption = (ing) =>
+    `${ing.sku ? `${ing.sku} · ` : ""}${ing.name} (${ing.unit})`;
+
+  const batchHelperText = isEditing
+    ? "El código de lote no puede modificarse por trazabilidad."
+    : values.batchNumber?.trim()
+      ? `Se registrará como: ${formatBatchCode(selectedSku, values.batchNumber)}`
+      : selectedSku
+        ? `Se combinará con el SKU (${selectedSku}-...). Si se omite, se genera automáticamente.`
+        : "Si se omite, se genera automáticamente.";
 
   return (
     <Modal
@@ -47,7 +60,7 @@ export function BatchFormModal({
             label="Insumo a reabastecer"
             value={
               selectedIngredient
-                ? `${selectedIngredient.name} (${selectedIngredient.unit})`
+                ? formatIngredientOption(selectedIngredient)
                 : values.ingredientId
             }
             disabled
@@ -61,7 +74,7 @@ export function BatchFormModal({
           >
             {ingredients.map((ing) => (
               <option key={ing.id} value={ing.id}>
-                {ing.name} ({ing.unit})
+                {formatIngredientOption(ing)}
               </option>
             ))}
           </Select>
@@ -70,10 +83,19 @@ export function BatchFormModal({
         <Input
           label="Número de lote (opcional)"
           type="text"
-          placeholder="Ej. LOTE-2026-001 (si se omite, se genera automáticamente)"
-          value={values.batchNumber}
+          placeholder={
+            selectedSku
+              ? `Ej. 2026-001 -> ${selectedSku}-2026-001`
+              : "Ej. LOTE-2026-001 (si se omite, se genera automáticamente)"
+          }
+          value={
+            isEditing
+              ? formatBatchCode(selectedSku, values.batchNumber)
+              : values.batchNumber
+          }
           onChange={(e) => onChange("batchNumber", e.target.value)}
           disabled={isEditing}
+          helperText={batchHelperText}
         />
 
         <div

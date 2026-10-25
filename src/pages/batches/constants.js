@@ -1,5 +1,20 @@
 export const FILTER_STATUS_OPTIONS = ["TODOS", "OPTIMO", "BAJO", "CRITICO"];
 
+export const formatBatchCode = (sku = "", batchNumber = "") => {
+  const cleanSku = String(sku || "")
+    .trim()
+    .toUpperCase();
+  const cleanBatch = String(batchNumber || "")
+    .trim()
+    .toUpperCase();
+  if (!cleanBatch) return cleanSku ? `${cleanSku}-LOT-...` : "";
+  if (!cleanSku) return cleanBatch;
+  if (cleanBatch.startsWith(`${cleanSku}-`)) {
+    return cleanBatch;
+  }
+  return `${cleanSku}-${cleanBatch}`;
+};
+
 export const emptyBatchForm = (
   suppliers = [],
   ingredients = [],

@@ -30,6 +30,23 @@ interface MockRawLote {
   estado: string;
 }
 
+function getIngredientSku(ingredientId: string): string {
+  const ing = (
+    inventoryStore.ingredientes as Array<{ id: string; sku?: string }>
+  )?.find((item) => item.id === ingredientId);
+  return ing?.sku ? String(ing.sku).trim().toUpperCase() : "";
+}
+
+function buildBatchCodeWithSku(rawBatch: string, ingredientId: string): string {
+  const sku = getIngredientSku(ingredientId);
+  const trimmed = rawBatch.trim().toUpperCase();
+  if (!sku) return trimmed;
+  if (trimmed.startsWith(`${sku}-`)) {
+    return trimmed;
+  }
+  return `${sku}-${trimmed}`;
+}
+
 function computeStatusFromMock(lote: MockRawLote): BatchStatus {
   if (lote.cantidadActual <= 0 || lote.estado === EstadoLote.AGOTADO) {
     return "depleted";
@@ -46,9 +63,10 @@ function computeStatusFromMock(lote: MockRawLote): BatchStatus {
 }
 
 function toBatch(lote: MockRawLote): Batch {
+  const rawCode = lote.batchNumber || lote.id;
   return {
     id: lote.id,
-    batchNumber: lote.batchNumber || lote.id,
+    batchNumber: buildBatchCodeWithSku(rawCode, lote.ingredientId),
     ingredientId: lote.ingredientId,
     supplierId: lote.supplierId ?? lote.providerId ?? null,
     initialQuantity: Number(lote.cantidadInicial ?? lote.cantidadActual ?? 0),
@@ -93,9 +111,11 @@ export const mockBatchesRepository: BatchesRepository = {
     });
 
     const createdLote = res.lotesNuevos[0] as MockRawLote;
-    if (input.batchNumber && input.batchNumber.trim()) {
-      createdLote.batchNumber = input.batchNumber.trim();
-    }
+    const rawCode = input.batchNumber?.trim() || createdLote.id;
+    createdLote.batchNumber = buildBatchCodeWithSku(
+      rawCode,
+      input.ingredientId,
+    );
     return toBatch(createdLote);
   },
 

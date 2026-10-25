@@ -5,6 +5,7 @@ import { ChevronDownIcon } from "../../../components/ui/Icons.jsx";
 import {
   batchStatusLabel,
   batchStatusVariant,
+  formatBatchCode,
   ingredientStatusLabel,
   ingredientStatusVariant,
 } from "../constants.js";
@@ -33,6 +34,21 @@ export function BatchIngredientCard({
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <h3 style={{ fontSize: "var(--h3-size)" }}>{ingredient.name}</h3>
+            {ingredient.sku && (
+              <span
+                style={{
+                  fontSize: "var(--caption-size)",
+                  fontFamily: "var(--font-mono, monospace)",
+                  fontWeight: 600,
+                  backgroundColor: "#EEF2FF",
+                  padding: "2px 8px",
+                  borderRadius: "4px",
+                  color: "var(--color-primary)",
+                }}
+              >
+                {ingredient.sku}
+              </span>
+            )}
             <span
               style={{
                 fontSize: "var(--caption-size)",
@@ -159,6 +175,10 @@ export function BatchIngredientCard({
                   (lote.status === "active" ||
                     lote.status === "expires_today") &&
                   lote.quantity > 0;
+                const fullBatchCode = formatBatchCode(
+                  ingredient.sku,
+                  lote.batchNumber,
+                );
 
                 return (
                   <div
@@ -184,8 +204,13 @@ export function BatchIngredientCard({
                         flexWrap: "wrap",
                       }}
                     >
-                      <strong style={{ color: "var(--color-ink)" }}>
-                        {lote.batchNumber}
+                      <strong
+                        style={{
+                          color: "var(--color-ink)",
+                          fontFamily: "var(--font-mono, monospace)",
+                        }}
+                      >
+                        {fullBatchCode}
                       </strong>
                       <span>
                         Vence:{" "}
