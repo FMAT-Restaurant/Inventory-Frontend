@@ -21,7 +21,7 @@ export function BatchIngredientCard({
   disabled = false,
 }) {
   return (
-    <Card padding="20px">
+    <Card className="batch-ingredient-card" padding="20px">
       <div
         style={{
           display: "flex",
