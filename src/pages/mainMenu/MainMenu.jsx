@@ -1,34 +1,38 @@
 import { Card } from '../../components/ui/Card.jsx';
 import { Button } from '../../components/ui/Button.jsx';
-import { BoxIcon, BookOpenIcon, ClipboardListIcon, ArrowRightIcon, PackageIcon } from '../../components/ui/Icons.jsx';
-
+import { BoxIcon, BookOpenIcon, ClipboardListIcon, ArrowRightIcon, PackageIcon, TruckIcon } from '../../components/ui/Icons.jsx';
 /**
  * Menú Inicial según FMAT-RESTAURANT v2.0
  * Vista estandarizada con tarjetas grandes para Insumos, Recetas y Movimientos.
  */
 export function MainMenu({ onSelectModule }) {
   const modules = [
-    {
-      id: 'ingredientes',
-      title: 'Ingredientes',
-      icon: PackageIcon
-    },
-    {
-      id: 'insumos',
-      title: 'Insumos y Lotes',
-      icon: BoxIcon
-    },
-    {
-      id: 'recetas',
-      title: 'Catálogo y Recetas',
-      icon: BookOpenIcon
-    },
-    {
-      id: 'movimientos',
-      title: 'Movimientos de Almacén',
-      icon: ClipboardListIcon
-    }
-  ];
+  {
+    id: 'ingredientes',
+    title: 'Ingredientes',
+    icon: PackageIcon
+  },
+  {
+    id: 'proveedores',
+    title: 'Proveedores',
+    icon: TruckIcon
+  },
+  {
+    id: 'insumos',
+    title: 'Insumos y Lotes',
+    icon: BoxIcon
+  },
+  {
+    id: 'recetas',
+    title: 'Catálogo y Recetas',
+    icon: BookOpenIcon
+  },
+  {
+    id: 'movimientos',
+    title: 'Movimientos de Almacén',
+    icon: ClipboardListIcon
+  }
+];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
