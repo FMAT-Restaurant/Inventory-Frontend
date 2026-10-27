@@ -21,8 +21,8 @@ import type {
 } from "./types";
 
 interface RawRecipeItem {
-  ingredientId: string;
-  ingredientName?: string;
+  itemId: string;
+  itemName?: string;
   unit?: string;
   requiredQuantity: number;
   availableStock?: number;
@@ -44,8 +44,8 @@ interface RawRecipe {
 
 function normalizeRecipeItem(raw: RawRecipeItem): RecipeItem {
   return {
-    ingredientId: String(raw.ingredientId ?? ""),
-    ingredientName: String(raw.ingredientName ?? ""),
+    itemId: String(raw.itemId ?? ""),
+    itemName: String(raw.itemName ?? ""),
     unit: String(raw.unit ?? ""),
     requiredQuantity: Number(raw.requiredQuantity ?? 0),
     availableStock: Number(raw.availableStock ?? 0),
@@ -99,7 +99,7 @@ async function request<T>(
 
     if (response.status === 404) {
       throw new Error(
-        detail || "La receta o uno de sus ingredientes no fue encontrado (404).",
+        detail || "La receta o uno de sus insumos no fue encontrado (404).",
       );
     }
     if (response.status === 400) {
@@ -157,7 +157,7 @@ export const httpRecipesRepository: RecipesRepository = {
       plateId: input.plateId.trim(),
       name: input.name.trim(),
       items: input.items.map((item) => ({
-        ingredientId: String(item.ingredientId),
+        itemId: String(item.itemId),
         requiredQuantity: Number(item.requiredQuantity),
       })),
     };
@@ -184,7 +184,7 @@ export const httpRecipesRepository: RecipesRepository = {
     }
     if (input.items !== undefined) {
       payload.items = input.items.map((item) => ({
-        ingredientId: String(item.ingredientId),
+        itemId: String(item.itemId),
         requiredQuantity: Number(item.requiredQuantity),
       }));
     }

@@ -12,7 +12,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
-      - ./e2e/ingredient.spec.ts-snapshots:/app/e2e/ingredient.spec.ts-snapshots
+      - ./e2e/item.spec.ts-snapshots:/app/e2e/item.spec.ts-snapshots
       - ./test-results:/app/test-results
       - ./playwright-report:/app/playwright-report
-    command: npx playwright test --update-snapshots
+    command: npx playwright test

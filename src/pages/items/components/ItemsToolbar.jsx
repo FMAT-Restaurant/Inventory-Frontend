@@ -1,7 +1,7 @@
 import { Button } from '../../../components/ui/Button.jsx';
 import { SearchIcon, PlusIcon } from '../../../components/ui/Icons.jsx';
 
-export function IngredientsToolbar({
+export function ItemsToolbar({
   search,
   category,
   categories,
@@ -84,7 +84,7 @@ export function IngredientsToolbar({
         </select>
         <Button variant="primary" size="md" onClick={onNew} disabled={disabled}>
           <PlusIcon size={16} />
-          <span>Nuevo ingrediente</span>
+          <span>Nuevo insumo</span>
         </Button>
       </div>
     </div>

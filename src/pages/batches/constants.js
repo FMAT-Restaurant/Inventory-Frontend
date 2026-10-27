@@ -2,34 +2,34 @@ export const FILTER_STATUS_OPTIONS = ["TODOS", "OPTIMO", "BAJO", "CRITICO"];
 
 export const emptyBatchForm = (
   suppliers = [],
-  ingredients = [],
-  preselectedIngredientId = "",
+  items = [],
+  preselectedItemId = "",
 ) => ({
   id: "",
   batchNumber: "",
   supplierId: suppliers[0]?.id || "",
-  ingredientId: preselectedIngredientId || ingredients[0]?.id || "",
+  itemId: preselectedItemId || items[0]?.id || "",
   quantity: "",
   cost: "",
   expirationDate: "",
-  lockIngredient: Boolean(preselectedIngredientId),
+  lockItem: Boolean(preselectedItemId),
 });
 
 export const formFromBatch = (batch, suppliers = []) => ({
   id: batch.id,
   batchNumber: batch.batchNumber || "",
   supplierId: batch.supplierId || suppliers[0]?.id || "",
-  ingredientId: batch.ingredientId,
+  itemId: batch.itemId,
   quantity: String(batch.quantity ?? ""),
   cost: String(batch.cost ?? ""),
   expirationDate: batch.expirationDate || "",
-  lockIngredient: true,
+  lockItem: true,
 });
 
-export const ingredientStatusVariant = (status) =>
+export const itemStatusVariant = (status) =>
   status === "CRITICO" ? "danger" : status === "BAJO" ? "warning" : "success";
 
-export const ingredientStatusLabel = (status) =>
+export const itemStatusLabel = (status) =>
   status === "CRITICO" ? "Agotado" : status === "BAJO" ? "Bajo" : "Óptimo";
 
 export const batchStatusVariant = (status) => {

@@ -1,17 +1,17 @@
 import { useMemo, useState } from "react";
-import { useIngredients } from "./hooks/useIngredients.js";
+import { useItems } from "./hooks/useItems.js";
 import { useColumnCount } from "./hooks/useColumnCount.js";
-import { IngredientsToolbar } from "./components/IngredientsToolbar.jsx";
-import { IngredientCard } from "./components/IngredientCard.jsx";
-import { IngredientsEmptyState } from "./components/IngredientsEmptyState.jsx";
-import { IngredientFormModal } from "./components/IngredientFormModal.jsx";
-import { formFromIngredients, emptyForm } from "./constants.js";
+import { ItemsToolbar } from "./components/ItemsToolbar.jsx";
+import { ItemCard } from "./components/ItemCard.jsx";
+import { ItemsEmptyState } from "./components/ItemsEmptyState.jsx";
+import { ItemFormModal } from "./components/ItemFormModal.jsx";
+import { formFromItem, emptyForm } from "./constants.js";
 
-export function IngredientesPage() {
+export function ItemsPage() {
   const {
     suppliers,
     categories,
-    filteredIngredients,
+    filteredItems,
     filters,
     updateFilters,
     loading,
@@ -21,17 +21,17 @@ export function IngredientesPage() {
     clearMessage,
     save,
     remove,
-  } = useIngredients();
+  } = useItems();
 
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState(emptyForm());
-  const [expandedIngredients, setExpandedIngredients] = useState({});
+  const [expandedItems, setExpandedItems] = useState({});
   const columnCount = useColumnCount();
 
-  const toggleIngredient = (ingredientId) => {
-    setExpandedIngredients((prev) => ({
+  const toggleItem = (itemId) => {
+    setExpandedItems((prev) => ({
       ...prev,
-      [ingredientId]: !prev[ingredientId],
+      [itemId]: !prev[itemId],
     }));
   };
 
@@ -48,12 +48,12 @@ export function IngredientesPage() {
   const columnas = useMemo(() => {
     const buckets = Array.from({ length: columnCount }, () => []);
 
-    filteredIngredients.forEach((ingredient, index) => {
-      buckets[index % columnCount].push(ingredient);
+    filteredItems.forEach((item, index) => {
+      buckets[index % columnCount].push(item);
     });
 
     return buckets;
-  }, [filteredIngredients, columnCount]);
+  }, [filteredItems, columnCount]);
 
   const openCreate = () => {
     clearMessage();
@@ -61,9 +61,9 @@ export function IngredientesPage() {
     setModalOpen(true);
   };
 
-  const openEdit = (ingredient) => {
+  const openEdit = (item) => {
     clearMessage();
-    setForm(formFromIngredients(ingredient, suppliers));
+    setForm(formFromItem(item, suppliers));
     setModalOpen(true);
   };
 
@@ -100,15 +100,13 @@ export function IngredientesPage() {
     }
   };
 
-  const confirmDelete = async (ingredient) => {
+  const confirmDelete = async (item) => {
     if (
-      !window.confirm(
-        `¿Eliminar el ingrediente "${ingredient.name}" del catálogo?`,
-      )
+      !window.confirm(`¿Eliminar el insumo "${item.name}" del catálogo?`)
     )
       return;
     try {
-      await remove(ingredient.id);
+      await remove(item.id);
     } catch {
       // El hook expone el error en el banner.
     }
@@ -131,7 +129,7 @@ export function IngredientesPage() {
         </div>
       )}
 
-      <IngredientsToolbar
+      <ItemsToolbar
         search={filters.search}
         category={filters.category}
         categories={categories}
@@ -141,10 +139,10 @@ export function IngredientesPage() {
         disabled={loading}
       />
 
-      {loading && filteredIngredients.length === 0 ? (
-        <IngredientsEmptyState loading />
-      ) : filteredIngredients.length === 0 ? (
-        <IngredientsEmptyState />
+      {loading && filteredItems.length === 0 ? (
+        <ItemsEmptyState loading />
+      ) : filteredItems.length === 0 ? (
+        <ItemsEmptyState />
       ) : (
         <div
           style={{
@@ -164,19 +162,19 @@ export function IngredientesPage() {
                 gap: "20px",
               }}
             >
-              {columna.map((ingredient) => (
-                <IngredientCard
-                  key={ingredient.id}
-                  ingredient={ingredient}
+              {columna.map((item) => (
+                <ItemCard
+                  key={item.id}
+                  item={item}
                   supplier={
-                    ingredient.supplierSugested ||
-                    suppliersById.get(ingredient.supplierIdSugested) ||
+                    item.supplierSugested ||
+                    suppliersById.get(item.supplierIdSugested) ||
                     null
                   }
-                  expanded={Boolean(expandedIngredients[ingredient.id])}
-                  onToggleExpand={() => toggleIngredient(ingredient.id)}
-                  onEdit={() => openEdit(ingredient)}
-                  onDelete={() => confirmDelete(ingredient)}
+                  expanded={Boolean(expandedItems[item.id])}
+                  onToggleExpand={() => toggleItem(item.id)}
+                  onEdit={() => openEdit(item)}
+                  onDelete={() => confirmDelete(item)}
                   disabled={saving}
                 />
               ))}
@@ -185,7 +183,7 @@ export function IngredientesPage() {
         </div>
       )}
 
-      <IngredientFormModal
+      <ItemFormModal
         isOpen={modalOpen}
         values={form}
         suppliers={suppliers}
@@ -198,3 +196,5 @@ export function IngredientesPage() {
     </div>
   );
 }
+
+export default ItemsPage;

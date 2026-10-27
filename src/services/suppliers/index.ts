@@ -8,7 +8,7 @@
  * `VITE_API_URL`. Ver ese archivo para los detalles.
  *
  * El repositorio se elige UNA VEZ al importar el módulo. Es consistente con
- * `services/ingredients/index.ts`.
+ * `services/items/index.ts`.
  */
 
 import { ENV } from '../../config/env';

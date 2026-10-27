@@ -19,7 +19,7 @@ import type {
 interface MockRawLote {
   id: string;
   batchNumber?: string;
-  ingredientId: string;
+  itemId: string;
   providerId?: string | null;
   supplierId?: string | null;
   cantidadInicial: number;
@@ -49,7 +49,7 @@ function toBatch(lote: MockRawLote): Batch {
   return {
     id: lote.id,
     batchNumber: lote.batchNumber || lote.id,
-    ingredientId: lote.ingredientId,
+    itemId: lote.itemId,
     supplierId: lote.supplierId ?? lote.providerId ?? null,
     initialQuantity: Number(lote.cantidadInicial ?? lote.cantidadActual ?? 0),
     quantity: Number(lote.cantidadActual ?? 0),
@@ -61,11 +61,11 @@ function toBatch(lote: MockRawLote): Batch {
 }
 
 export const mockBatchesRepository: BatchesRepository = {
-  async list(ingredientId?: string): Promise<Batch[]> {
+  async list(itemId?: string): Promise<Batch[]> {
     const snapshot = mockService.getSnapshot();
     const lotes = (snapshot.lotes ?? []) as MockRawLote[];
-    const filtered = ingredientId
-      ? lotes.filter((l) => l.ingredientId === ingredientId)
+    const filtered = itemId
+      ? lotes.filter((l) => l.itemId === itemId)
       : lotes;
     return filtered.map(toBatch);
   },
@@ -84,7 +84,7 @@ export const mockBatchesRepository: BatchesRepository = {
       providerId,
       itemsComprados: [
         {
-          ingredientId: input.ingredientId,
+          itemId: input.itemId,
           cantidad: Number(input.quantity),
           costoUnitario: Number(input.cost),
           fechaCaducidad: input.expirationDate,

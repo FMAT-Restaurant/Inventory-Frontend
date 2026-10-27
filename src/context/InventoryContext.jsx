@@ -21,13 +21,13 @@ export function InventoryProvider({ children }) {
     setTimeout(() => setNotificacion(null), 5000);
   };
 
-  const guardarIngrediente = useCallback(async data => {
+  const saveItem = useCallback(async data => {
     setCargando(true);
     try {
-      const res = await mockService.guardarIngrediente(data);
+      const res = await mockService.saveItem(data);
       mostrarMensaje(
         'success',
-        data?.id ? `Ingrediente "${res.name}" actualizado.` : `Ingrediente "${res.name}" agregado al catálogo.`
+        data?.id ? `Insumo "${res.name}" actualizado.` : `Insumo "${res.name}" agregado al catálogo.`
       );
       return res;
     } catch (err) {
@@ -38,11 +38,11 @@ export function InventoryProvider({ children }) {
     }
   }, []);
 
-  const eliminarIngrediente = useCallback(async ingredienteId => {
+  const deleteItem = useCallback(async itemId => {
     setCargando(true);
     try {
-      const res = await mockService.eliminarIngrediente(ingredienteId);
-      mostrarMensaje('success', `Ingrediente "${res.name}" eliminado del catálogo.`);
+      const res = await mockService.deleteItem(itemId);
+      mostrarMensaje('success', `Insumo "${res.name}" eliminado del catálogo.`);
       return res;
     } catch (err) {
       mostrarMensaje('error', err.message);
@@ -162,8 +162,8 @@ export function InventoryProvider({ children }) {
     ...snapshot,
     cargando,
     notificacion,
-    guardarIngrediente,
-    eliminarIngrediente,
+    saveItem,
+    deleteItem,
     registrarCompra,
     reservarComanda,
     confirmarConsumo,

@@ -1,7 +1,7 @@
 import { Card } from '../../../components/ui/Card.jsx';
 import { PackageIcon } from '../../../components/ui/Icons.jsx';
 
-export function IngredientsEmptyState({ loading = false }) {
+export function ItemsEmptyState({ loading = false }) {
   return (
     <Card padding="32px">
       <div
@@ -15,7 +15,7 @@ export function IngredientsEmptyState({ loading = false }) {
       >
         <PackageIcon size={32} />
         <p style={{ fontSize: 'var(--small-size)' }}>
-          {loading ? 'Cargando ingredientes...' : 'No se encontraron ingredientes con esos criterios.'}
+          {loading ? 'Cargando insumos...' : 'No se encontraron insumos con esos criterios.'}
         </p>
       </div>
     </Card>

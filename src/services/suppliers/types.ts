@@ -3,7 +3,7 @@
  *
  * Este archivo es la FUENTE ÚNICA DE VERDAD del dominio `Supplier` en el frontend.
  * Cualquier otro módulo que necesite `Supplier` (por ejemplo, el dropdown
- * "Proveedor sugerido" del formulario de ingredientes) debe importarlo de aquí,
+ * "Proveedor sugerido" del formulario de insumos) debe importarlo de aquí,
  * NO declarar su propia versión.
  *
  * Contrato con el backend (ver `supplier.schema.ts` en NestJS):

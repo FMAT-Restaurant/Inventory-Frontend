@@ -1,4 +1,4 @@
-export interface Ingredient {
+export interface Item {
   id: string;
   nombre: string;
   unidad: string;
@@ -12,7 +12,7 @@ export interface Ingredient {
 export interface Batch {
   id: string;
   numeroLote: string;
-  ingredienteId: string;
+  itemId: string;
   cantidad: number;
   fechaCaducidad: string;
   fechaIngreso: string;
@@ -23,7 +23,7 @@ export interface Batch {
 }
 
 export interface RecipeItem {
-  ingredienteId: string;
+  itemId: string;
   nombre: string;
   cantidadRequerida: number;
   unidad: string;
@@ -39,13 +39,13 @@ export interface Recipe {
   costoTotal: number;
   disponible: boolean;
   estado: 'disponible' | 'agotado' | 'incompleta';
-  ingredientes: RecipeItem[];
+  items: RecipeItem[];
 }
 
 export interface Movement {
   id: string;
   tipo: 'ingreso' | 'descuento' | 'reserva' | 'liberacion' | 'ajuste' | 'merma';
-  ingredienteId: string;
+  itemId: string;
   loteId: string | null;
   ordenId: string | null;
   cantidad: number;
@@ -57,7 +57,7 @@ export interface Movement {
 export interface Waste {
   id: string;
   ordenId: string | null;
-  ingredienteId: string;
+  itemId: string;
   loteId: string;
   cantidad: number;
   motivo: string;
@@ -74,7 +74,7 @@ export interface Supplier {
 export interface HistoricalCost {
   id: string;
   proveedorId: string;
-  ingredienteId: string;
+  itemId: string;
   costo: number;
   fecha: string;
   loteId: string;
@@ -84,7 +84,7 @@ export interface Reservation {
   id: string;
   ordenId: string;
   platilloId: string;
-  ingredienteId: string;
+  itemId: string;
   loteId: string;
   cantidad: number;
   estado: 'activa' | 'consumida' | 'liberada';

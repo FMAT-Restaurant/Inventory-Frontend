@@ -133,7 +133,7 @@ export function RecipeDetailModal({
                   }}
                 >
                   <th style={{ padding: "10px 14px", fontWeight: 600 }}>
-                    Ingrediente
+                    Insumo
                   </th>
                   <th style={{ padding: "10px 14px", fontWeight: 600 }}>
                     Requerido
@@ -157,13 +157,13 @@ export function RecipeDetailModal({
                         color: "var(--color-muted)",
                       }}
                     >
-                      Esta receta no tiene ingredientes registrados.
+                      Esta receta no tiene insumos registrados.
                     </td>
                   </tr>
                 ) : (
                   recipe.items.map((item, idx) => (
                     <tr
-                      key={item.ingredientId || idx}
+                      key={item.itemId || idx}
                       style={{
                         borderBottom:
                           idx < recipe.items.length - 1
@@ -175,7 +175,7 @@ export function RecipeDetailModal({
                       }}
                     >
                       <td style={{ padding: "10px 14px", fontWeight: 500 }}>
-                        {item.ingredientName || item.ingredientId}
+                        {item.itemName || item.itemId}
                       </td>
                       <td style={{ padding: "10px 14px" }}>
                         {item.requiredQuantity} {item.unit}

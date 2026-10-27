@@ -1,27 +1,23 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ingredientsRepository } from "../../../services/ingredients";
-import type {
-  Ingredient,
-  IngredientInput,
-  Supplier,
-} from "../../../services/ingredients";
+import { itemsRepository } from "../../../services/items";
+import type { Item, ItemInput, Supplier } from "../../../services/items";
 
-export interface IngredientFilters {
+export interface ItemFilters {
   search: string;
   category: string;
 }
 
-const INITIAL_FILTERS: IngredientFilters = {
+const INITIAL_FILTERS: ItemFilters = {
   search: "",
   category: "TODAS",
 };
 
-export function validateIngredientInput(input: IngredientInput): string | null {
+export function validateItemInput(input: ItemInput): string | null {
   if (!input.sku || !input.sku.trim()) {
-    return "El SKU del ingrediente es obligatorio.";
+    return "El SKU del insumo es obligatorio.";
   }
   if (!input.name || !input.name.trim()) {
-    return "El nombre del ingrediente es obligatorio.";
+    return "El nombre del insumo es obligatorio.";
   }
   if (!input.unit || !input.unit.trim()) {
     return "Selecciona una unidad de medida.";
@@ -41,31 +37,31 @@ function errorMessage(err: unknown, fallback: string): string {
 
 /**
  * Hook que encapsula toda la lógica de negocio y el acceso a datos
- * de la sección de ingredientes. La vista solo consume su resultado.
+ * de la sección de insumos. La vista solo consume su resultado.
  */
-export function useIngredients() {
-  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+export function useItems() {
+  const [items, setItems] = useState<Item[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [filters, setFilters] = useState<IngredientFilters>(INITIAL_FILTERS);
+  const [filters, setFilters] = useState<ItemFilters>(INITIAL_FILTERS);
 
   const reload = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const [items, supplierList] = await Promise.all([
-        ingredientsRepository.list(),
-        ingredientsRepository.listSuppliers(),
+        itemsRepository.list(),
+        itemsRepository.listSuppliers(),
       ]);
-      setIngredients(items);
-      console.log("Ingredientes cargados:", items);
+      setItems(items);
+      console.log("Insumos cargados:", items);
       console.log("Proveedores cargados:", supplierList);
       setSuppliers(supplierList);
     } catch (err) {
-      setError(errorMessage(err, "No se pudieron cargar los ingredientes."));
+      setError(errorMessage(err, "No se pudieron cargar los insumos."));
     } finally {
       setLoading(false);
     }
@@ -76,15 +72,15 @@ export function useIngredients() {
   }, [reload]);
 
   useEffect(() => {
-    if (!ingredientsRepository.subscribe) return;
-    return ingredientsRepository.subscribe(() => {
+    if (!itemsRepository.subscribe) return;
+    return itemsRepository.subscribe(() => {
       void reload();
     });
   }, [reload]);
 
   const save = useCallback(
-    async (input: IngredientInput) => {
-      const validationError = validateIngredientInput(input);
+    async (input: ItemInput) => {
+      const validationError = validateItemInput(input);
       if (validationError) {
         setError(validationError);
         throw new Error(validationError);
@@ -94,15 +90,15 @@ export function useIngredients() {
       setError(null);
       try {
         if (input.id) {
-          await ingredientsRepository.update(input.id, input);
-          setMessage(`Ingrediente "${input.name}" actualizado.`);
+          await itemsRepository.update(input.id, input);
+          setMessage(`Insumo "${input.name}" actualizado.`);
         } else {
-          await ingredientsRepository.create(input);
-          setMessage(`Ingrediente "${input.name}" agregado al catálogo.`);
+          await itemsRepository.create(input);
+          setMessage(`Insumo "${input.name}" agregado al catálogo.`);
         }
         await reload();
       } catch (err) {
-        setError(errorMessage(err, "No se pudo guardar el ingrediente."));
+        setError(errorMessage(err, "No se pudo guardar el insumo."));
         throw err;
       } finally {
         setSaving(false);
@@ -116,22 +112,22 @@ export function useIngredients() {
       setSaving(true);
       setError(null);
       try {
-        const target = ingredients.find((ingredient) => ingredient.id === id);
-        await ingredientsRepository.remove(id);
+        const target = items.find((item) => item.id === id);
+        await itemsRepository.remove(id);
         setMessage(
           target
-            ? `Ingrediente "${target.name}" eliminado del catálogo.`
-            : "Ingrediente eliminado del catálogo.",
+            ? `Insumo "${target.name}" eliminado del catálogo.`
+            : "Insumo eliminado del catálogo.",
         );
         await reload();
       } catch (err) {
-        setError(errorMessage(err, "No se pudo eliminar el ingrediente."));
+        setError(errorMessage(err, "No se pudo eliminar el insumo."));
         throw err;
       } finally {
         setSaving(false);
       }
     },
-    [ingredients, reload],
+    [items, reload],
   );
 
   const clearMessage = useCallback(() => {
@@ -139,29 +135,29 @@ export function useIngredients() {
     setMessage(null);
   }, []);
 
-  const updateFilters = useCallback((partial: Partial<IngredientFilters>) => {
+  const updateFilters = useCallback((partial: Partial<ItemFilters>) => {
     setFilters((prev) => ({ ...prev, ...partial }));
   }, []);
 
   const categories = useMemo(() => {
     const unique = Array.from(
       new Set(
-        ingredients
-          .map((ingredient) => (ingredient.category || "").trim())
+        items
+          .map((item) => (item.category || "").trim())
           .filter((category) => category !== "" && category !== "TODAS"),
       ),
     ).sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
 
     return ["TODAS", ...unique];
-  }, [ingredients]);
+  }, [items]);
 
-  const filteredIngredients = useMemo(() => {
+  const filteredItems = useMemo(() => {
     const search = filters.search.trim().toLowerCase();
-    return ingredients.filter((ingredient) => {
-      const name = (ingredient.name || "").toLowerCase();
-      const category = (ingredient.category || "").toLowerCase();
-      const sku = (ingredient.sku || "").toLowerCase();
-      const description = (ingredient.description || "").toLowerCase();
+    return items.filter((item) => {
+      const name = (item.name || "").toLowerCase();
+      const category = (item.category || "").toLowerCase();
+      const sku = (item.sku || "").toLowerCase();
+      const description = (item.description || "").toLowerCase();
       const matchesSearch =
         search === "" ||
         name.includes(search) ||
@@ -171,15 +167,15 @@ export function useIngredients() {
 
       if (!matchesSearch) return false;
       if (filters.category === "TODAS") return true;
-      return ingredient.category === filters.category;
+      return item.category === filters.category;
     });
-  }, [ingredients, filters]);
+  }, [items, filters]);
 
   return {
-    ingredients,
+    items,
     suppliers,
     categories,
-    filteredIngredients,
+    filteredItems,
     filters,
     updateFilters,
     loading,

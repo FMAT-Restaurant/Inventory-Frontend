@@ -9,11 +9,11 @@ import { RecipesEmptyState } from "./components/RecipesEmptyState.jsx";
 export function RecetasPage() {
   const {
     filteredRecipes,
-    availableIngredients,
+    availableItems,
     filters,
     updateFilters,
     loading,
-    loadingIngredients,
+    loadingItems,
     saving,
     error,
     message,
@@ -141,7 +141,7 @@ export function RecetasPage() {
           updateFilters({ availability })
         }
         onNewRecipe={handleOpenCreate}
-        loadingIngredients={loadingIngredients}
+        loadingItems={loadingItems}
       />
 
       {/* Contenido Principal */}
@@ -196,8 +196,8 @@ export function RecetasPage() {
           isOpen={isFormOpen}
           onClose={handleCloseForm}
           recipeToEdit={recipeToEdit}
-          availableIngredients={availableIngredients}
-          loadingIngredients={loadingIngredients}
+          availableItems={availableItems}
+          loadingItems={loadingItems}
           onSave={handleSaveRecipe}
           saving={saving}
         />

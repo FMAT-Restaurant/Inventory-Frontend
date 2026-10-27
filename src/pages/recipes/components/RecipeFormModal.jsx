@@ -9,8 +9,8 @@ export function RecipeFormModal({
   isOpen,
   onClose,
   recipeToEdit,
-  availableIngredients,
-  loadingIngredients,
+  availableItems,
+  loadingItems,
   onSave,
   saving,
 }) {
@@ -19,16 +19,16 @@ export function RecipeFormModal({
   const [items, setItems] = useState(() => {
     if (Array.isArray(recipeToEdit?.items) && recipeToEdit.items.length > 0) {
       return recipeToEdit.items.map((i) => ({
-        ingredientId: i.ingredientId,
+        itemId: i.itemId,
         requiredQuantity: String(i.requiredQuantity),
       }));
     }
-    return [{ ingredientId: "", requiredQuantity: "" }];
+    return [{ itemId: "", requiredQuantity: "" }];
   });
   const [formError, setFormError] = useState(null);
 
   const handleAddItem = () => {
-    setItems((prev) => [...prev, { ingredientId: "", requiredQuantity: "" }]);
+    setItems((prev) => [...prev, { itemId: "", requiredQuantity: "" }]);
   };
 
   const handleRemoveItem = (index) => {
@@ -69,17 +69,17 @@ export function RecipeFormModal({
 
     for (let i = 0; i < items.length; i++) {
       const row = items[i];
-      if (!row.ingredientId) {
-        setFormError(`Fila ${i + 1}: Selecciona un ingrediente.`);
+      if (!row.itemId) {
+        setFormError(`Fila ${i + 1}: Selecciona un insumo.`);
         return;
       }
-      if (selectedIds.has(row.ingredientId)) {
+      if (selectedIds.has(row.itemId)) {
         setFormError(
-          `El mismo ingrediente no puede seleccionarse más de una vez en la receta.`,
+          `El mismo insumo no puede seleccionarse más de una vez en la receta.`,
         );
         return;
       }
-      selectedIds.add(row.ingredientId);
+      selectedIds.add(row.itemId);
 
       const qty = parseFloat(row.requiredQuantity);
       if (isNaN(qty) || qty < MIN_REQUIRED_QUANTITY) {
@@ -90,7 +90,7 @@ export function RecipeFormModal({
       }
 
       formattedItems.push({
-        ingredientId: row.ingredientId,
+        itemId: row.itemId,
         requiredQuantity: qty,
       });
     }
@@ -206,11 +206,11 @@ export function RecipeFormModal({
             }}
           >
             {items.map((item, idx) => {
-              // Buscar ingrediente seleccionado para obtener su unidad de medida
-              const selectedIng = availableIngredients.find(
-                (ing) => ing.id === item.ingredientId,
+              // Buscar insumo seleccionado para obtener su unidad de medida
+              const selectedItem = availableItems.find(
+                (itemOption) => itemOption.id === item.itemId,
               );
-              const unit = selectedIng?.unit || "";
+              const unit = selectedItem?.unit || "";
 
               return (
                 <div
@@ -226,13 +226,13 @@ export function RecipeFormModal({
                     border: "1px solid var(--color-border)",
                   }}
                 >
-                  {/* Selector de Ingrediente */}
+                  {/* Selector de Insumo */}
                   <select
-                    value={item.ingredientId}
+                    value={item.itemId}
                     onChange={(e) =>
-                      handleItemChange(idx, "ingredientId", e.target.value)
+                      handleItemChange(idx, "itemId", e.target.value)
                     }
-                    disabled={loadingIngredients || saving}
+                    disabled={loadingItems || saving}
                     required
                     style={{
                       height: "var(--control-height)",
@@ -247,9 +247,9 @@ export function RecipeFormModal({
                     }}
                   >
                     <option value="">-- Seleccionar insumo --</option>
-                    {availableIngredients.map((ing) => (
-                      <option key={ing.id} value={ing.id}>
-                        {ing.name} ({ing.unit})
+                    {availableItems.map((itemOption) => (
+                      <option key={itemOption.id} value={itemOption.id}>
+                        {itemOption.name} ({itemOption.unit})
                       </option>
                     ))}
                   </select>
@@ -348,7 +348,7 @@ export function RecipeFormModal({
           <button
             type="button"
             onClick={handleAddItem}
-            disabled={loadingIngredients || saving}
+            disabled={loadingItems || saving}
             style={{
               marginTop: "8px",
               display: "inline-flex",
@@ -388,7 +388,7 @@ export function RecipeFormModal({
           <Button
             variant="primary"
             type="submit"
-            disabled={saving || loadingIngredients}
+            disabled={saving || loadingItems}
           >
             {saving
               ? "Guardando..."

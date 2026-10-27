@@ -1,5 +1,5 @@
 import {
-  Ingredient,
+  Item,
   Batch,
   Movement,
   Supplier,
@@ -7,7 +7,7 @@ import {
   Recipe
 } from '../types/index';
 import {
-  IngredientInput,
+  ItemInput,
   BatchInput,
   AdjustInput,
   WasteInput,
@@ -15,13 +15,13 @@ import {
 } from '../types/inputs';
 
 export interface InventoryService {
-  // --- Ingredientes ---
-  getIngredients(): Promise<Ingredient[]>;
-  getIngredient(id: string): Promise<Ingredient>;
-  saveIngredient(data: IngredientInput): Promise<Ingredient>;
+  // --- Insumos ---
+  getItems(): Promise<Item[]>;
+  getItem(id: string): Promise<Item>;
+  saveItem(data: ItemInput): Promise<Item>;
 
   // --- Lotes ---
-  getBatches(ingredientId: string): Promise<Batch[]>;
+  getBatches(itemId: string): Promise<Batch[]>;
   addBatch(data: BatchInput): Promise<Batch>;
 
   // --- Ajustes y mermas ---
@@ -29,7 +29,7 @@ export interface InventoryService {
   registerWaste(data: WasteInput): Promise<void>;
 
   // --- Movimientos ---
-  getMovements(ingredientId: string): Promise<Movement[]>;
+  getMovements(itemId: string): Promise<Movement[]>;
 
   // --- Proveedores ---
   getSuppliers(): Promise<Supplier[]>;

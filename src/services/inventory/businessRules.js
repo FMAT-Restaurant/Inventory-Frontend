@@ -26,7 +26,7 @@ export function roundQuantity(num, decimals = 4) {
  * Aplica el criterio FEFO descontando insumos exclusivamente de los lotes vigentes más próximos a caducar.
  * Descarta automáticamente lotes cuya fecha de caducidad sea anterior a `fechaReferencia`.
  * 
- * @param {Array} lotes - Lista de lotes del ingrediente.
+ * @param {Array} lotes - Lista de lotes del insumo.
  * @param {number} cantidadADescontar - Cantidad requerida en la unidad base (kg, l, pza).
  * @param {Date|string} fechaReferencia - Fecha base para evaluar caducidad (permite tests deterministas).
  * @returns {Object} { lotesActualizados, trazaDescuentos, cantidadRestante }
@@ -100,7 +100,7 @@ export function validarStockDisponible(totalStock, reservedStock, cantidadRequer
 }
 
 /**
- * Determina el estado de umbral de un ingrediente.
+ * Determina el estado de umbral de un insumo.
  * @param {number} availableStock
  * @param {number} minStock
  * @returns {string} EstadoUmbral (OPTIMO, BAJO, CRITICO)
@@ -123,16 +123,16 @@ export function calcularEstadoUmbral(availableStock, minStock) {
  * Regla de "Receta Agotada": disponible = false cuando unidadesPreparables === 0.
  * 
  * @param {Object} platillo
- * @param {Map<string, { availableStock, name }>} stockIngredientesMap
- * @returns {Object} { plateId, nombre, disponible, unidadesPreparables, ingredientesDetalle, faltantes }
+ * @param {Map<string, { availableStock, name }>} stockItemsMap
+ * @returns {Object} { plateId, nombre, disponible, unidadesPreparables, itemsDetalle, faltantes }
  */
-export function evaluarDisponibilidadReceta(platillo, stockIngredientesMap) {
+export function evaluarDisponibilidadReceta(platillo, stockItemsMap) {
   let porcionesMaximas = Infinity;
   const faltantes = [];
-  const ingredientesDetalle = [];
+  const itemsDetalle = [];
 
   for (const item of platillo.receta) {
-    const stockInfo = stockIngredientesMap.get(item.ingredientId) || {
+    const stockInfo = stockItemsMap.get(item.itemId) || {
       availableStock: 0,
       name: 'Desconocido'
     };
@@ -148,7 +148,7 @@ export function evaluarDisponibilidadReceta(platillo, stockIngredientesMap) {
     const suficiente = disp >= req;
     if (!suficiente) {
       faltantes.push({
-        ingredientId: item.ingredientId,
+        itemId: item.itemId,
         name: stockInfo.name,
         requerido: req,
         disponible: disp,
@@ -156,8 +156,8 @@ export function evaluarDisponibilidadReceta(platillo, stockIngredientesMap) {
       });
     }
 
-    ingredientesDetalle.push({
-      ingredientId: item.ingredientId,
+    itemsDetalle.push({
+      itemId: item.itemId,
       name: stockInfo.name,
       cantidadRequerida: req,
       disponible: disp,
@@ -173,7 +173,7 @@ export function evaluarDisponibilidadReceta(platillo, stockIngredientesMap) {
     nombre: platillo.nombre,
     disponible,
     unidadesPreparables,
-    ingredientesDetalle,
+    itemsDetalle,
     faltantes
   };
 }
@@ -200,13 +200,13 @@ export function calcularCostoPonderado(existenciaActual, cppActual, cantidadNuev
 /**
  * Calcula el costo de insumos de una receta a partir del costo promedio ponderado.
  * @param {Array} receta
- * @param {Map<string, { averageCost }>} ingredientesMap
+ * @param {Map<string, { averageCost }>} itemsMap
  * @returns {number}
  */
-export function calcularCostoProduccion(receta, ingredientesMap) {
+export function calcularCostoProduccion(receta, itemsMap) {
   let total = 0;
   for (const item of receta) {
-    const ing = ingredientesMap.get(item.ingredientId);
+    const ing = itemsMap.get(item.itemId);
     if (ing) {
       total += item.cantidad * (ing.averageCost || 0);
     }

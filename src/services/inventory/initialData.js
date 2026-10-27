@@ -29,10 +29,10 @@ export const initialProveedores = [
   },
 ];
 
-export const initialIngredientes = [
+export const initialItems = [
   {
-    id: "ing-1",
-    sku: "ING-0001",
+    id: "item-1",
+    sku: "ITM-0001",
     name: "Harina de Trigo Extra",
     description: "Harina de trigo extra panadera de alta proteína.",
     unit: "kg",
@@ -46,8 +46,8 @@ export const initialIngredientes = [
     storageCondition: "Ambiente",
   },
   {
-    id: "ing-2",
-    sku: "ING-0002",
+    id: "item-2",
+    sku: "ITM-0002",
     name: "Queso Mozzarella",
     description: "Queso mozzarella en bloque para pizza y salsas.",
     unit: "kg",
@@ -61,8 +61,8 @@ export const initialIngredientes = [
     storageCondition: "Refrigerado",
   },
   {
-    id: "ing-3",
-    sku: "ING-0003",
+    id: "item-3",
+    sku: "ITM-0003",
     name: "Salsa de Tomate Base",
     description: "Salsa de tomate base para preparaciones de la carta.",
     unit: "l",
@@ -76,8 +76,8 @@ export const initialIngredientes = [
     storageCondition: "Refrigerado",
   },
   {
-    id: "ing-4",
-    sku: "ING-0004",
+    id: "item-4",
+    sku: "ITM-0004",
     name: "Carne de Res Molida 80/20",
     description: "Carne de res molida 80/20 para hamburguesas y albóndigas.",
     unit: "kg",
@@ -91,8 +91,8 @@ export const initialIngredientes = [
     storageCondition: "Congelado",
   },
   {
-    id: "ing-5",
-    sku: "ING-0005",
+    id: "item-5",
+    sku: "ITM-0005",
     name: "Pan Brioche para Hamburguesa",
     description: "Brioche de 10 cm para sandwich de hamburguesa.",
     unit: "pza",
@@ -106,8 +106,8 @@ export const initialIngredientes = [
     storageCondition: "Ambiente",
   },
   {
-    id: "ing-6",
-    sku: "ING-0006",
+    id: "item-6",
+    sku: "ITM-0006",
     name: "Aceite de Oliva Extra Virgen",
     description: "Aceite de oliva extra virgen para salteados y aliños.",
     unit: "l",
@@ -126,7 +126,7 @@ export const initialLotes = [
   // Harina de Trigo: 2 lotes (uno que vence pronto para FEFO)
   {
     id: "lot-101",
-    ingredientId: "ing-1",
+    itemId: "item-1",
     cantidadInicial: 10,
     cantidadActual: 6,
     costoUnitario: 18.0,
@@ -137,7 +137,7 @@ export const initialLotes = [
   },
   {
     id: "lot-102",
-    ingredientId: "ing-1",
+    itemId: "item-1",
     cantidadInicial: 20,
     cantidadActual: 18,
     costoUnitario: 19.0,
@@ -150,7 +150,7 @@ export const initialLotes = [
   // Queso Mozzarella: 2 lotes
   {
     id: "lot-201",
-    ingredientId: "ing-2",
+    itemId: "item-2",
     cantidadInicial: 8,
     cantidadActual: 3,
     costoUnitario: 138.0,
@@ -161,7 +161,7 @@ export const initialLotes = [
   },
   {
     id: "lot-202",
-    ingredientId: "ing-2",
+    itemId: "item-2",
     cantidadInicial: 10,
     cantidadActual: 9,
     costoUnitario: 142.0,
@@ -174,7 +174,7 @@ export const initialLotes = [
   // Salsa de Tomate
   {
     id: "lot-301",
-    ingredientId: "ing-3",
+    itemId: "item-3",
     cantidadInicial: 12,
     cantidadActual: 9,
     costoUnitario: 42.0,
@@ -187,7 +187,7 @@ export const initialLotes = [
   // Carne de Res: Stock bajo para provocar alertas
   {
     id: "lot-401",
-    ingredientId: "ing-4",
+    itemId: "item-4",
     cantidadInicial: 8,
     cantidadActual: 5, // < mínimo (12 kg), disparará Alerta de Stock Bajo
     costoUnitario: 165.0,
@@ -200,7 +200,7 @@ export const initialLotes = [
   // Pan para hamburguesa
   {
     id: "lot-501",
-    ingredientId: "ing-5",
+    itemId: "item-5",
     cantidadInicial: 30,
     cantidadActual: 24,
     costoUnitario: 8.5,
@@ -213,7 +213,7 @@ export const initialLotes = [
   // Aceite de oliva
   {
     id: "lot-601",
-    ingredientId: "ing-6",
+    itemId: "item-6",
     cantidadInicial: 6,
     cantidadActual: 6,
     costoUnitario: 195.0,
@@ -233,9 +233,9 @@ export const initialPlatillos = [
     categoria: "Pizzas",
     precioVenta: 189.0,
     receta: [
-      { ingredientId: "ing-1", cantidad: 0.25 }, // 250g harina
-      { ingredientId: "ing-2", cantidad: 0.2 }, // 200g queso
-      { ingredientId: "ing-3", cantidad: 0.15 }, // 150ml salsa
+      { itemId: "item-1", cantidad: 0.25 }, // 250g harina
+      { itemId: "item-2", cantidad: 0.2 }, // 200g queso
+      { itemId: "item-3", cantidad: 0.15 }, // 150ml salsa
     ],
   },
   {
@@ -246,9 +246,9 @@ export const initialPlatillos = [
     categoria: "Hamburguesas",
     precioVenta: 165.0,
     receta: [
-      { ingredientId: "ing-4", cantidad: 0.2 }, // 200g carne
-      { ingredientId: "ing-5", cantidad: 1.0 }, // 1 pza pan
-      { ingredientId: "ing-2", cantidad: 0.05 }, // 50g queso
+      { itemId: "item-4", cantidad: 0.2 }, // 200g carne
+      { itemId: "item-5", cantidad: 1.0 }, // 1 pza pan
+      { itemId: "item-2", cantidad: 0.05 }, // 50g queso
     ],
   },
   {
@@ -259,8 +259,8 @@ export const initialPlatillos = [
     categoria: "Entradas",
     precioVenta: 95.0,
     receta: [
-      { ingredientId: "ing-1", cantidad: 0.3 }, // 300g harina
-      { ingredientId: "ing-6", cantidad: 0.06 }, // 60ml aceite
+      { itemId: "item-1", cantidad: 0.3 }, // 300g harina
+      { itemId: "item-6", cantidad: 0.06 }, // 60ml aceite
     ],
   },
 ];

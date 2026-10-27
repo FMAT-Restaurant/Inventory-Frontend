@@ -15,7 +15,7 @@ import {
 export function MovimientosPage() {
   const {
     historialMovimientos,
-    ingredientes,
+    items,
     platillos,
     consumirRecetaDirecta,
     procesarMermasCaducadas,
@@ -202,9 +202,9 @@ export function MovimientosPage() {
                           {esSalida && mov.detalle.trazaConsumoGlobal ? (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                               {mov.detalle.trazaConsumoGlobal.map(t => {
-                                const nombreIng = ingredientes.find(i => i.id === t.ingredientId)?.name || t.ingredientId;
+                                const nombreIng = items.find(i => i.id === t.itemId)?.name || t.itemId;
                                 return (
-                                  <span key={t.ingredientId} style={{ fontSize: 'var(--caption-size)' }}>
+                                  <span key={t.itemId} style={{ fontSize: 'var(--caption-size)' }}>
                                     • {nombreIng}: {t.desgloseLotes.map(l => `${l.loteId} (-${l.cantidadDescontada})`).join(', ')}
                                   </span>
                                 );

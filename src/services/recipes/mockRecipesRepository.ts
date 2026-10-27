@@ -21,24 +21,24 @@ const INITIAL_RECIPES: Recipe[] = [
     productionCost: 48.9,
     items: [
       {
-        ingredientId: "ing-1",
-        ingredientName: "Harina de Trigo Extra",
+        itemId: "item-1",
+        itemName: "Harina de Trigo Extra",
         unit: "kg",
         requiredQuantity: 0.25,
         availableStock: 24.0,
         hasSufficientStock: true,
       },
       {
-        ingredientId: "ing-2",
-        ingredientName: "Queso Mozzarella",
+        itemId: "item-2",
+        itemName: "Queso Mozzarella",
         unit: "kg",
         requiredQuantity: 0.2,
         availableStock: 12.0,
         hasSufficientStock: true,
       },
       {
-        ingredientId: "ing-3",
-        ingredientName: "Salsa de Tomate Base",
+        itemId: "item-3",
+        itemName: "Salsa de Tomate Base",
         unit: "l",
         requiredQuantity: 0.15,
         availableStock: 9.0,
@@ -57,24 +57,24 @@ const INITIAL_RECIPES: Recipe[] = [
     productionCost: 48.5,
     items: [
       {
-        ingredientId: "ing-4",
-        ingredientName: "Carne de Res Molida 80/20",
+        itemId: "item-4",
+        itemName: "Carne de Res Molida 80/20",
         unit: "kg",
         requiredQuantity: 0.2,
         availableStock: 5.0,
         hasSufficientStock: true,
       },
       {
-        ingredientId: "ing-5",
-        ingredientName: "Pan Brioche para Hamburguesa",
+        itemId: "item-5",
+        itemName: "Pan Brioche para Hamburguesa",
         unit: "pza",
         requiredQuantity: 1.0,
         availableStock: 24.0,
         hasSufficientStock: true,
       },
       {
-        ingredientId: "ing-2",
-        ingredientName: "Queso Mozzarella",
+        itemId: "item-2",
+        itemName: "Queso Mozzarella",
         unit: "kg",
         requiredQuantity: 0.05,
         availableStock: 12.0,
@@ -93,16 +93,16 @@ const INITIAL_RECIPES: Recipe[] = [
     productionCost: 17.25,
     items: [
       {
-        ingredientId: "ing-1",
-        ingredientName: "Harina de Trigo Extra",
+        itemId: "item-1",
+        itemName: "Harina de Trigo Extra",
         unit: "kg",
         requiredQuantity: 0.3,
         availableStock: 24.0,
         hasSufficientStock: true,
       },
       {
-        ingredientId: "ing-6",
-        ingredientName: "Aceite de Oliva Extra Virgen",
+        itemId: "item-6",
+        itemName: "Aceite de Oliva Extra Virgen",
         unit: "l",
         requiredQuantity: 0.06,
         availableStock: 6.0,
@@ -146,8 +146,8 @@ export const mockRecipesRepository: RecipesRepository = {
 
     const now = new Date().toISOString();
     const items = input.items.map((i) => ({
-      ingredientId: i.ingredientId,
-      ingredientName: `Insumo ${i.ingredientId}`,
+      itemId: i.itemId,
+      itemName: `Insumo ${i.itemId}`,
       unit: "kg",
       requiredQuantity: i.requiredQuantity,
       availableStock: 10,
@@ -198,8 +198,8 @@ export const mockRecipesRepository: RecipesRepository = {
       name: input.name ? input.name.trim() : current.name,
       items: input.items
         ? input.items.map((i) => ({
-            ingredientId: i.ingredientId,
-            ingredientName: `Insumo ${i.ingredientId}`,
+            itemId: i.itemId,
+            itemName: `Insumo ${i.itemId}`,
             unit: "kg",
             requiredQuantity: i.requiredQuantity,
             availableStock: 10,

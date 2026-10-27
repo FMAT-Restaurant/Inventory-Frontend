@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { recipesRepository } from "../../../services/recipes";
-import { ingredientsRepository } from "../../../services/ingredients";
+import { itemsRepository } from "../../../services/items";
 import type {
   CreateRecipeInput,
   Recipe,
   RecipeSaveResult,
 } from "../../../services/recipes";
-import type { Ingredient } from "../../../services/ingredients";
+import type { Item } from "../../../services/items";
 import { MIN_REQUIRED_QUANTITY, type RecipeFilter } from "../constants";
 
 export interface RecipeFilters {
@@ -27,19 +27,19 @@ export function validateRecipeInput(input: CreateRecipeInput): string | null {
     return "El nombre de la receta es obligatorio.";
   }
   if (!Array.isArray(input.items) || input.items.length === 0) {
-    return "La receta debe contener al menos un ingrediente o insumo.";
+    return "La receta debe contener al menos un insumo.";
   }
 
-  const ingredientIds = new Set<string>();
+  const itemIds = new Set<string>();
   for (let i = 0; i < input.items.length; i++) {
     const item = input.items[i];
-    if (!item.ingredientId) {
-      return `Fila ${i + 1}: Debe seleccionar un ingrediente.`;
+    if (!item.itemId) {
+      return `Fila ${i + 1}: Debe seleccionar un insumo.`;
     }
-    if (ingredientIds.has(item.ingredientId)) {
-      return `No puedes agregar el mismo ingrediente más de una vez en la receta.`;
+    if (itemIds.has(item.itemId)) {
+      return `No puedes agregar el mismo insumo más de una vez en la receta.`;
     }
-    ingredientIds.add(item.ingredientId);
+    itemIds.add(item.itemId);
 
     if (
       typeof item.requiredQuantity !== "number" ||
@@ -63,26 +63,26 @@ function errorMessage(err: unknown, fallback: string): string {
  */
 export function useRecipes() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [availableIngredients, setAvailableIngredients] = useState<
-    Ingredient[]
+  const [availableItems, setAvailableItems] = useState<
+    Item[]
   >([]);
   const [loading, setLoading] = useState(true);
-  const [loadingIngredients, setLoadingIngredients] = useState(true);
+  const [loadingItems, setLoadingItems] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [filters, setFilters] = useState<RecipeFilters>(INITIAL_FILTERS);
 
-  // Cargar ingredientes disponibles para el selector del formulario
-  const loadIngredients = useCallback(async () => {
-    setLoadingIngredients(true);
+  // Cargar insumos disponibles para el selector del formulario
+  const loadItems = useCallback(async () => {
+    setLoadingItems(true);
     try {
-      const items = await ingredientsRepository.list();
-      setAvailableIngredients(items);
+      const items = await itemsRepository.list();
+      setAvailableItems(items);
     } catch (err) {
-      console.error("Error al cargar catálogo de ingredientes:", err);
+      console.error("Error al cargar catálogo de insumos:", err);
     } finally {
-      setLoadingIngredients(false);
+      setLoadingItems(false);
     }
   }, []);
 
@@ -102,8 +102,8 @@ export function useRecipes() {
 
   useEffect(() => {
     void reload();
-    void loadIngredients();
-  }, [reload, loadIngredients]);
+    void loadItems();
+  }, [reload, loadItems]);
 
   // Suscripción reactiva si el repositorio la soporta
   useEffect(() => {
@@ -225,11 +225,11 @@ export function useRecipes() {
   return {
     recipes,
     filteredRecipes,
-    availableIngredients,
+    availableItems,
     filters,
     updateFilters,
     loading,
-    loadingIngredients,
+    loadingItems,
     saving,
     error,
     message,

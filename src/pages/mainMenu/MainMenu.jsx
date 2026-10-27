@@ -7,32 +7,32 @@ import { BoxIcon, BookOpenIcon, ClipboardListIcon, ArrowRightIcon, PackageIcon, 
  */
 export function MainMenu({ onSelectModule }) {
   const modules = [
-  {
-    id: 'ingredientes',
-    title: 'Ingredientes',
-    icon: PackageIcon
-  },
-  {
-    id: 'proveedores',
-    title: 'Proveedores',
-    icon: TruckIcon
-  },
-  {
-    id: 'insumos',
-    title: 'Insumos y Lotes',
-    icon: BoxIcon
-  },
-  {
-    id: 'recetas',
-    title: 'Catálogo y Recetas',
-    icon: BookOpenIcon
-  },
-  {
-    id: 'movimientos',
-    title: 'Movimientos de Almacén',
-    icon: ClipboardListIcon
-  }
-];
+    {
+      id: 'items',
+      title: 'Catálogo de Insumos',
+      icon: PackageIcon
+    },
+    {
+      id: 'batches',
+      title: 'Lotes',
+      icon: BoxIcon
+    },
+    {
+      id: 'proveedores',
+      title: 'Proveedores',
+      icon: TruckIcon
+    },
+    {
+      id: 'recetas',
+      title: 'Catálogo y Recetas',
+      icon: BookOpenIcon
+    },
+    {
+      id: 'movimientos',
+      title: 'Movimientos de Almacén',
+      icon: ClipboardListIcon
+    }
+  ];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
