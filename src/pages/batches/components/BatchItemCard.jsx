@@ -5,12 +5,12 @@ import { ChevronDownIcon } from "../../../components/ui/Icons.jsx";
 import {
   batchStatusLabel,
   batchStatusVariant,
-  ingredientStatusLabel,
-  ingredientStatusVariant,
+  itemStatusLabel,
+  itemStatusVariant,
 } from "../constants.js";
 
-export function BatchIngredientCard({
-  ingredient,
+export function BatchItemCard({
+  item,
   batches,
   expanded,
   onToggleExpand,
@@ -32,7 +32,7 @@ export function BatchIngredientCard({
       >
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <h3 style={{ fontSize: "var(--h3-size)" }}>{ingredient.name}</h3>
+            <h3 style={{ fontSize: "var(--h3-size)" }}>{item.name}</h3>
             <span
               style={{
                 fontSize: "var(--caption-size)",
@@ -42,10 +42,10 @@ export function BatchIngredientCard({
                 color: "var(--color-muted)",
               }}
             >
-              {ingredient.category}
+              {item.category}
             </span>
-            <Badge variant={ingredientStatusVariant(ingredient.status)}>
-              {ingredientStatusLabel(ingredient.status)}
+            <Badge variant={itemStatusVariant(item.status)}>
+              {itemStatusLabel(item.status)}
             </Badge>
           </div>
 
@@ -63,7 +63,7 @@ export function BatchIngredientCard({
                 Existencia Disponible:{" "}
               </span>
               <strong style={{ color: "var(--color-ink)", fontSize: "15px" }}>
-                {ingredient.availableStock} {ingredient.unit}
+                {item.availableStock} {item.unit}
               </strong>
             </div>
             <div>
@@ -71,18 +71,18 @@ export function BatchIngredientCard({
               <strong
                 style={{
                   color:
-                    ingredient.reservedStock > 0
+                    item.reservedStock > 0
                       ? "var(--color-primary)"
                       : "var(--color-muted)",
                 }}
               >
-                {ingredient.reservedStock} {ingredient.unit}
+                {item.reservedStock} {item.unit}
               </strong>
             </div>
             <div>
               <span style={{ color: "var(--color-muted)" }}>Stock Total: </span>
               <strong>
-                {ingredient.totalStock} {ingredient.unit}
+                {item.totalStock} {item.unit}
               </strong>
             </div>
           </div>
@@ -213,7 +213,7 @@ export function BatchIngredientCard({
                     >
                       <span>
                         Cantidad: <strong>{lote.quantity}</strong> /{" "}
-                        {lote.initialQuantity} {ingredient.unit}
+                        {lote.initialQuantity} {item.unit}
                       </span>
                       <Badge variant={batchStatusVariant(lote.status)}>
                         {batchStatusLabel(lote.status)}

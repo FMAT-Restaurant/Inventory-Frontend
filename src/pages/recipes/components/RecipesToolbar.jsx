@@ -8,7 +8,7 @@ export function RecipesToolbar({
   availability,
   onAvailabilityChange,
   onNewRecipe,
-  loadingIngredients = false,
+  loadingItems = false,
 }) {
   const filterOptions = ["ALL", "AVAILABLE", "UNAVAILABLE"];
 
@@ -108,11 +108,11 @@ export function RecipesToolbar({
           variant="primary"
           size="md"
           onClick={onNewRecipe}
-          disabled={loadingIngredients}
+          disabled={loadingItems}
         >
           <PlusIcon size={16} />
           <span>
-            {loadingIngredients ? "Cargando insumos..." : "Nueva receta"}
+            {loadingItems ? "Cargando insumos..." : "Nueva receta"}
           </span>
         </Button>
       </div>

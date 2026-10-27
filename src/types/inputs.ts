@@ -1,4 +1,4 @@
-export interface IngredientInput {
+export interface ItemInput {
   nombre: string;
   unidad: string;
   umbralMin: number;
@@ -6,7 +6,7 @@ export interface IngredientInput {
 }
 
 export interface BatchInput {
-  ingredienteId: string;
+  itemId: string;
   numeroLote: string;
   cantidad: number;
   fechaCaducidad: string;
@@ -16,7 +16,7 @@ export interface BatchInput {
 
 export interface AdjustInput {
   loteId: string;
-  ingredienteId: string;
+  itemId: string;
   cantidadRegistrada: number;
   cantidadReal: number;
   motivo: string;
@@ -24,7 +24,7 @@ export interface AdjustInput {
 
 export interface WasteInput {
   loteId: string;
-  ingredienteId: string;
+  itemId: string;
   cantidad: number;
   motivo: string;
   ordenId?: string;

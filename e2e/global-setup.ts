@@ -4,8 +4,8 @@ import { loadEnv } from "vite";
 /**
  * Reset de la base de datos antes de ejecutar la suite E2E.
  *
- * El backend da de baja lógica los ingredientes (`isActive: false`) pero
- * mantiene índices únicos en `name` y `sku`, por lo que un ingrediente con
+ * El backend da de baja lógica los insumos (`isActive: false`) pero
+ * mantiene índices únicos en `name` y `sku`, por lo que un insumo con
  * el mismo nombre no se puede volver a crear. El endpoint de test borra la
  * base por completo para que la suite sea idempotente entre ejecuciones.
  *

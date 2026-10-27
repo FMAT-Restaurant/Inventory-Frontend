@@ -3,7 +3,7 @@
  *
  * Contrato REST consumido (base = VITE_API_URL):
  *   GET    /batches                   -> Batch[]
- *   GET    /batches?ingredientId=:id  -> Batch[]
+ *   GET    /batches?itemId=:id  -> Batch[]
  *   GET    /batches/:id               -> Batch
  *   POST   /batches                   (CreateBatchInput) -> Batch
  *   PATCH  /batches/:id               (UpdateBatchInput) -> Batch
@@ -23,7 +23,7 @@ interface RawBatch {
   id?: string;
   _id?: string;
   batchNumber?: string;
-  ingredientId: string;
+  itemId: string;
   supplierId?: string | null;
   initialQuantity?: number;
   quantity: number;
@@ -47,7 +47,7 @@ function normalizeBatch(raw: RawBatch): Batch {
   return {
     id,
     batchNumber: raw.batchNumber || id,
-    ingredientId: String(raw.ingredientId),
+    itemId: String(raw.itemId),
     supplierId: raw.supplierId ? String(raw.supplierId) : null,
     initialQuantity,
     quantity,
@@ -93,9 +93,9 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 }
 
 export const httpBatchesRepository: BatchesRepository = {
-  async list(ingredientId?: string) {
-    const query = ingredientId
-      ? `?ingredientId=${encodeURIComponent(ingredientId)}`
+  async list(itemId?: string) {
+    const query = itemId
+      ? `?itemId=${encodeURIComponent(itemId)}`
       : "";
     const items = await request<RawBatch[]>(`/batches${query}`);
     return (items ?? []).map(normalizeBatch);
@@ -112,7 +112,7 @@ export const httpBatchesRepository: BatchesRepository = {
 
   async create(input: CreateBatchInput) {
     const payload: Record<string, unknown> = {
-      ingredientId: input.ingredientId,
+      itemId: input.itemId,
       quantity: Number(input.quantity),
       cost: Number(input.cost),
       expirationDate: input.expirationDate,

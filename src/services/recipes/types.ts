@@ -3,8 +3,8 @@
  */
 
 export interface RecipeItem {
-  ingredientId: string;
-  ingredientName: string;
+  itemId: string;
+  itemName: string;
   unit: string;
   requiredQuantity: number;
   availableStock: number;
@@ -24,7 +24,7 @@ export interface Recipe {
 }
 
 export interface CreateRecipeItemInput {
-  ingredientId: string;
+  itemId: string;
   requiredQuantity: number;
 }
 

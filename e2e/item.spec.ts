@@ -1,20 +1,20 @@
 import { test, expect, type Page } from "@playwright/test";
 
 const CREATE_NAME = "Harina de Prueba E2E";
-const CANCEL_NAME = "Ingrediente a Cancelar E2E";
-const DELETE_NAME = "Ingrediente a Eliminar E2E";
-const EXPAND_NAME = "Ingrediente Expandible E2E";
+const CANCEL_NAME = "Insumo a Cancelar E2E";
+const DELETE_NAME = "Insumo a Eliminar E2E";
+const EXPAND_NAME = "Insumo Expandible E2E";
 
-const CREATE_SKU = "ING-E2E-01";
-const CANCEL_SKU = "ING-E2E-02";
-const DELETE_SKU = "ING-E2E-03";
-const EXPAND_SKU = "ING-E2E-04";
+const CREATE_SKU = "ITM-E2E-01";
+const CANCEL_SKU = "ITM-E2E-02";
+const DELETE_SKU = "ITM-E2E-03";
+const EXPAND_SKU = "ITM-E2E-04";
 
 const SEARCH_PLACEHOLDER = "Buscar por nombre, SKU o categoría...";
 
 /**
  * El backend mantiene índices únicos en `name` y `sku` incluso para los
- * ingredientes dados de baja lógica, así que cada proyecto de navegador
+ * insumos dados de baja lógica, así que cada proyecto de navegador
  * usa su propio nombre y SKU para poder coexistir en la misma base.
  */
 function uniqueName(base: string, project: string) {
@@ -25,7 +25,7 @@ function uniqueSku(base: string, project: string) {
   return `${base}-${project}`;
 }
 
-async function goToIngredients(page: Page) {
+async function goToItems(page: Page) {
   await page.goto("./");
 
   /* El primer render del dev server puede tardar (arranque en frío) */
@@ -34,16 +34,16 @@ async function goToIngredients(page: Page) {
   ).toBeVisible({ timeout: 30_000 });
 
   await page
-    .getByRole("heading", { name: "Ingredientes", exact: true, level: 2 })
+    .getByRole("heading", { name: "Catálogo de Insumos", exact: true, level: 2 })
     .click();
 
   await expect(
-    page.getByRole("heading", { name: "Catálogo de Ingredientes", level: 1 }),
+    page.getByRole("heading", { name: "Catálogo de Insumos", level: 1 }),
   ).toBeVisible();
 }
 
 function cardOf(page: Page, name: string) {
-  return page.locator(".ingredient-card", {
+  return page.locator(".item-card", {
     has: page.getByRole("heading", { name, level: 3 }),
   });
 }
@@ -91,7 +91,7 @@ async function deleteIfExists(page: Page, name: string) {
   await expect(card).toHaveCount(0);
 }
 
-async function createIngredient(
+async function createItem(
   page: Page,
   name: string,
   sku: string,
@@ -99,7 +99,7 @@ async function createIngredient(
 ) {
   await deleteIfExists(page, name);
 
-  await page.getByRole("button", { name: "Nuevo ingrediente" }).click();
+  await page.getByRole("button", { name: "Nuevo insumo" }).click();
 
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
@@ -117,11 +117,11 @@ async function createIngredient(
     .getByLabel("Condición de almacenamiento")
     .selectOption("Refrigerado");
 
-  await dialog.getByRole("button", { name: "Agregar ingrediente" }).click();
+  await dialog.getByRole("button", { name: "Agregar insumo" }).click();
 
   await expect(dialog).toBeHidden();
   await expect(
-    page.getByText(`Ingrediente "${name}" agregado al catálogo.`),
+    page.getByText(`Insumo "${name}" agregado al catálogo.`),
   ).toBeVisible();
   await expect(cardOf(page, name)).toHaveCount(1);
 }
@@ -136,22 +136,22 @@ async function shoot(page: Page, file: string) {
   await expect(page).toHaveScreenshot(file);
 }
 
-test.describe("IngredientesPage", () => {
-  test("Desde el home entra a Ingredientes y crea un nuevo ingrediente", async ({
+test.describe("ItemsPage", () => {
+  test("Desde el home entra a Insumos y crea un nuevo insumo", async ({
     page,
   }, testInfo) => {
     const name = uniqueName(CREATE_NAME, testInfo.project.name);
     const sku = uniqueSku(CREATE_SKU, testInfo.project.name);
 
-    await goToIngredients(page);
-    await createIngredient(
+    await goToItems(page);
+    await createItem(
       page,
       name,
       sku,
       "Harina de trigo para validar el flujo E2E.",
     );
 
-    // Catálogo filtrado: solo se ve el ingrediente recién creado
+    // Catálogo filtrado: solo se ve el insumo recién creado
     await filterBy(page, "Prueba");
     await expect(cardOf(page, name)).toBeVisible();
 
@@ -159,17 +159,17 @@ test.describe("IngredientesPage", () => {
     await expandCard(page, name);
     await expect(cardOf(page, name).getByText(sku)).toBeVisible();
 
-    await shoot(page, "crear-ingrediente.png");
+    await shoot(page, "crear-insumo.png");
   });
 
-  test("Eliminar un ingrediente y cancelar mantiene el catálogo", async ({
+  test("Eliminar un insumo y cancelar mantiene el catálogo", async ({
     page,
   }, testInfo) => {
     const name = uniqueName(CANCEL_NAME, testInfo.project.name);
     const sku = uniqueSku(CANCEL_SKU, testInfo.project.name);
 
-    await goToIngredients(page);
-    await createIngredient(page, name, sku);
+    await goToItems(page);
+    await createItem(page, name, sku);
 
     await filterBy(page, "Cancelar");
     const card = cardOf(page, name);
@@ -181,20 +181,20 @@ test.describe("IngredientesPage", () => {
     // Sigue en el catálogo y no hay mensaje de éxito
     await expect(card).toHaveCount(1);
     await expect(
-      page.getByText(`Ingrediente "${name}" eliminado`),
+      page.getByText(`Insumo "${name}" eliminado`),
     ).toBeHidden();
 
-    await shoot(page, "eliminar-ingrediente-cancelar.png");
+    await shoot(page, "eliminar-insumo-cancelar.png");
   });
 
-  test("Eliminar un ingrediente y aceptar lo quita del catálogo", async ({
+  test("Eliminar un insumo y aceptar lo quita del catálogo", async ({
     page,
   }, testInfo) => {
     const name = uniqueName(DELETE_NAME, testInfo.project.name);
     const sku = uniqueSku(DELETE_SKU, testInfo.project.name);
 
-    await goToIngredients(page);
-    await createIngredient(page, name, sku);
+    await goToItems(page);
+    await createItem(page, name, sku);
 
     await filterBy(page, "Eliminar");
     const card = cardOf(page, name);
@@ -205,20 +205,20 @@ test.describe("IngredientesPage", () => {
 
     await expect(card).toHaveCount(0);
     await expect(
-      page.getByText(`Ingrediente "${name}" eliminado del catálogo.`),
+      page.getByText(`Insumo "${name}" eliminado del catálogo.`),
     ).toBeVisible();
 
-    await shoot(page, "eliminar-ingrediente-aceptar.png");
+    await shoot(page, "eliminar-insumo-aceptar.png");
   });
 
-  test("La card de ingrediente se expande y colapsa mostrando todo el detalle", async ({
+  test("La card de insumo se expande y colapsa mostrando todo el detalle", async ({
     page,
   }, testInfo) => {
     const name = uniqueName(EXPAND_NAME, testInfo.project.name);
     const sku = uniqueSku(EXPAND_SKU, testInfo.project.name);
 
-    await goToIngredients(page);
-    await createIngredient(
+    await goToItems(page);
+    await createItem(
       page,
       name,
       sku,
@@ -292,10 +292,10 @@ test.describe("Demo de fixtures de Playwright", () => {
     // 3) request -> APIRequestContext. Comparte el `baseURL` del config
     //    (el dev server de Vite en :5173), por eso usamos URL absoluta para
     //    pegarle directo al backend en :3000.
-    const res = await request.get("http://localhost:3000/ingredients");
+    const res = await request.get("http://localhost:3000/items");
     expect(res.ok()).toBeTruthy();
-    const ingredients = (await res.json()) as unknown[];
-    console.log(`[request] /ingredients devolvió ${ingredients.length} registros`);
+    const items = (await res.json()) as unknown[];
+    console.log(`[request] /items devolvió ${items.length} registros`);
 
     // 3b) Alternativa: crear un contexto de API con su propia baseURL.
     const api = await playwright.request.newContext({

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ingredientsRepository } from "../../../services/ingredients";
-import type { Ingredient, Supplier } from "../../../services/ingredients";
+import { itemsRepository } from "../../../services/items";
+import type { Item, Supplier } from "../../../services/items";
 import { batchesRepository } from "../../../services/batches";
 import type {
   Batch,
@@ -21,7 +21,7 @@ const INITIAL_FILTERS: BatchFilters = {
 export function validateCreateBatchInput(
   input: CreateBatchInput,
 ): string | null {
-  if (!input.ingredientId) {
+  if (!input.itemId) {
     return "Selecciona el insumo a reabastecer.";
   }
   if (Number.isNaN(Number(input.quantity)) || Number(input.quantity) <= 0) {
@@ -66,7 +66,7 @@ function errorMessage(err: unknown, fallback: string): string {
  * de la sección de insumos y lotes (batches).
  */
 export function useBatches() {
-  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+  const [items, setItems] = useState<Item[]>([]);
   const [batches, setBatches] = useState<Batch[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
@@ -79,12 +79,12 @@ export function useBatches() {
     setLoading(true);
     setError(null);
     try {
-      const [ingredientList, batchList, supplierList] = await Promise.all([
-        ingredientsRepository.list(),
+      const [itemList, batchList, supplierList] = await Promise.all([
+        itemsRepository.list(),
         batchesRepository.list(),
-        ingredientsRepository.listSuppliers(),
+        itemsRepository.listSuppliers(),
       ]);
-      setIngredients(ingredientList);
+      setItems(itemList);
       setBatches(batchList);
       setSuppliers(supplierList);
     } catch (err) {
@@ -191,44 +191,44 @@ export function useBatches() {
     setFilters((prev) => ({ ...prev, ...partial }));
   }, []);
 
-  const filteredIngredients = useMemo(() => {
+  const filteredItems = useMemo(() => {
     const search = filters.search.trim().toLowerCase();
-    return ingredients.filter((ing) => {
-      const name = (ing.name || "").toLowerCase();
-      const category = (ing.category || "").toLowerCase();
+    return items.filter((item) => {
+      const name = (item.name || "").toLowerCase();
+      const category = (item.category || "").toLowerCase();
       const matchesSearch =
         search === "" || name.includes(search) || category.includes(search);
 
       if (!matchesSearch) return false;
       if (filters.status === "TODOS") return true;
-      return ing.status === filters.status;
+      return item.status === filters.status;
     });
-  }, [ingredients, filters]);
+  }, [items, filters]);
 
-  const batchesByIngredientId = useMemo(() => {
+  const batchesByItemId = useMemo(() => {
     const map = new Map<string, Batch[]>();
     for (const batch of batches) {
-      const current = map.get(batch.ingredientId) ?? [];
+      const current = map.get(batch.itemId) ?? [];
       current.push(batch);
-      map.set(batch.ingredientId, current);
+      map.set(batch.itemId, current);
     }
-    for (const [ingId, list] of map.entries()) {
+    for (const [itemId, list] of map.entries()) {
       list.sort(
         (a, b) =>
           new Date(a.expirationDate).getTime() -
           new Date(b.expirationDate).getTime(),
       );
-      map.set(ingId, list);
+      map.set(itemId, list);
     }
     return map;
   }, [batches]);
 
   return {
-    ingredients,
+    items,
     batches,
-    batchesByIngredientId,
+    batchesByItemId,
     suppliers,
-    filteredIngredients,
+    filteredItems,
     filters,
     updateFilters,
     loading,

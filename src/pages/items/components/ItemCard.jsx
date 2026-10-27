@@ -9,8 +9,8 @@ import {
   estadoLabel,
 } from "../constants.js";
 
-export function IngredientCard({
-  ingredient,
+export function ItemCard({
+  item,
   supplier,
   expanded = false,
   onToggleExpand,
@@ -18,7 +18,7 @@ export function IngredientCard({
   onDelete,
   disabled = false,
 }) {
-  const estado = estadoDe(ingredient);
+  const estado = estadoDe(item);
   const colores = estadoColores(estado);
 
   const handleHeaderKeyDown = (event) => {
@@ -29,7 +29,7 @@ export function IngredientCard({
 
   return (
     <Card
-      className="ingredient-card"
+      className="item-card"
       padding="20px"
       hoverable
       style={{
@@ -45,7 +45,7 @@ export function IngredientCard({
         role="button"
         tabIndex={0}
         aria-expanded={expanded}
-        aria-label={`${expanded ? "Cerrar" : "Ver detalle de"} ${ingredient.name}`}
+        aria-label={`${expanded ? "Cerrar" : "Ver detalle de"} ${item.name}`}
         onClick={onToggleExpand}
         onKeyDown={handleHeaderKeyDown}
         style={{
@@ -57,7 +57,7 @@ export function IngredientCard({
         }}
       >
         <div style={{ minWidth: 0 }}>
-          <h3 style={{ fontSize: "var(--h3-size)" }}>{ingredient.name}</h3>
+          <h3 style={{ fontSize: "var(--h3-size)" }}>{item.name}</h3>
           <div
             style={{
               marginTop: "4px",
@@ -67,11 +67,11 @@ export function IngredientCard({
           >
             Disponible:{" "}
             <strong style={{ color: "var(--color-ink)" }}>
-              {ingredient.availableStock} {ingredient.unit}
+              {item.availableStock} {item.unit}
             </strong>{" "}
             / Mínimo:{" "}
             <strong style={{ color: "var(--color-ink)" }}>
-              {ingredient.minStock} {ingredient.unit}
+              {item.minStock} {item.unit}
             </strong>
           </div>
         </div>
@@ -117,7 +117,7 @@ export function IngredientCard({
                 color: "var(--color-muted)",
               }}
             >
-              {ingredient.category || "General"}
+              {item.category || "General"}
             </span>
             <span
               style={{
@@ -129,11 +129,11 @@ export function IngredientCard({
                 fontFamily: "monospace",
               }}
             >
-              {ingredient.sku || "Sin SKU"}
+              {item.sku || "Sin SKU"}
             </span>
           </div>
 
-          {ingredient.description && (
+          {item.description && (
             <div
               style={{
                 marginTop: "8px",
@@ -141,7 +141,7 @@ export function IngredientCard({
                 color: "var(--color-muted)",
               }}
             >
-              {ingredient.description}
+              {item.description}
             </div>
           )}
 
@@ -157,24 +157,24 @@ export function IngredientCard({
             <div>
               <span style={{ color: "var(--color-muted)" }}>Disponible: </span>
               <strong style={{ color: "var(--color-ink)" }}>
-                {ingredient.availableStock} {ingredient.unit}
+                {item.availableStock} {item.unit}
               </strong>
             </div>
             <div>
               <span style={{ color: "var(--color-muted)" }}>Stock total: </span>
               <strong>
-                {ingredient.totalStock} {ingredient.unit}
+                {item.totalStock} {item.unit}
               </strong>
             </div>
             <div>
               <span style={{ color: "var(--color-muted)" }}>Mínimo: </span>
               <strong>
-                {ingredient.minStock} {ingredient.unit}
+                {item.minStock} {item.unit}
               </strong>
             </div>
             <div>
               <span style={{ color: "var(--color-muted)" }}>Costo prom.: </span>
-              <strong>${Number(ingredient.averageCost).toFixed(2)}</strong>
+              <strong>${Number(item.averageCost).toFixed(2)}</strong>
             </div>
           </div>
 
@@ -200,11 +200,11 @@ export function IngredientCard({
           >
             Condición de almacenamiento:{" "}
             <strong style={{ color: "var(--color-text)" }}>
-              {ingredient.storageCondition || "Sin definir"}
+              {item.storageCondition || "Sin definir"}
             </strong>{" "}
             · Perecedero:{" "}
             <strong style={{ color: "var(--color-text)" }}>
-              {ingredient.isPerishable ? "Sí" : "No"}
+              {item.isPerishable ? "Sí" : "No"}
             </strong>
           </div>
         </div>

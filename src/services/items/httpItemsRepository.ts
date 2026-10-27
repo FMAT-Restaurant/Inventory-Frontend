@@ -1,13 +1,13 @@
 /**
- * Implementación HTTP del repositorio de ingredientes para qa/prod.
+ * Implementación HTTP del repositorio de items para qa/prod.
  *
  * Contrato REST asumido (base = VITE_API_URL):
- *   GET    /ingredients          -> Ingrediente[]
- *   GET    /ingredients/:id      -> Ingrediente
- *   POST   /ingredients          (CreateIngredientDto) -> Ingrediente
- *   PATCH  /ingredients/:id      (Partial<CreateIngredientDto>) -> Ingrediente
- *   DELETE /ingredients/:id      -> Ingrediente desactivado
- *   GET    /suppliers            -> Proveedor[]
+ *   GET    /items          -> Item[]
+ *   GET    /items/:id      -> Item
+ *   POST   /items          (CreateItemDto) -> Item
+ *   PATCH  /items/:id      (Partial<CreateItemDto>) -> Item
+ *   DELETE /items/:id      -> Item desactivado
+ *   GET    /suppliers      -> Proveedor[]
  *
  * Campos exigidos por el backend: sku, name, category, unit, minStock y
  * storageCondition. Opcionales: description, isPerishable, averageCost y
@@ -15,7 +15,7 @@
  */
 
 import { ENV } from "../../config/env";
-import type { Ingredient, IngredientInput, IngredientsRepository, Supplier } from "./types";
+import type { Item, ItemInput, ItemsRepository, Supplier } from "./types";
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`${ENV.API_URL}${path}`, {
@@ -53,7 +53,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
  * Construye el payload del backend a partir del formulario de la UI.
  * Se descartan los campos opcionales vacíos para no enviar datos sin sentido.
  */
-function toPayload(input: IngredientInput): Record<string, unknown> {
+function toPayload(input: ItemInput): Record<string, unknown> {
   const payload: Record<string, unknown> = {
     sku: input.sku.trim(),
     name: input.name.trim(),
@@ -77,7 +77,7 @@ function toPayload(input: IngredientInput): Record<string, unknown> {
  * Normaliza la respuesta del backend para que la UI siempre reciba
  * los mismos campos, sin importar si el servidor omitió opcionales.
  */
-function normalizeIngredient(item: Ingredient & { _id?: string }): Ingredient {
+function normalizeItem(item: Item & { _id?: string }): Item {
   return {
     ...item,
     id: item.id || item._id || "",
@@ -93,37 +93,37 @@ function normalizeIngredient(item: Ingredient & { _id?: string }): Ingredient {
   };
 }
 
-export const httpIngredientsRepository: IngredientsRepository = {
+export const httpItemsRepository: ItemsRepository = {
   async list() {
-    const items = await request<(Ingredient & { _id?: string })[]>("/ingredients");
-    return items.map(normalizeIngredient);
+    const items = await request<(Item & { _id?: string })[]>("/items");
+    return items.map(normalizeItem);
   },
 
   async getById(id) {
     try {
-      const item = await request<Ingredient & { _id?: string }>(`/ingredients/${id}`);
-      return normalizeIngredient(item);
+      const item = await request<Item & { _id?: string }>(`/items/${id}`);
+      return normalizeItem(item);
     } catch {
       return null;
     }
   },
 
   create(input) {
-    return request<Ingredient>("/ingredients", {
+    return request<Item>("/items", {
       method: "POST",
       body: JSON.stringify(toPayload(input)),
     });
   },
 
   update(id, input) {
-    return request<Ingredient>(`/ingredients/${id}`, {
+    return request<Item>(`/items/${id}`, {
       method: "PATCH",
       body: JSON.stringify(toPayload(input)),
     });
   },
 
   async remove(id) {
-    await request<void>(`/ingredients/${id}`, { method: "DELETE" });
+    await request<void>(`/items/${id}`, { method: "DELETE" });
   },
 
   listSuppliers() {

@@ -5,7 +5,7 @@ import { Modal } from "../../../components/ui/Modal.jsx";
 export function BatchFormModal({
   isOpen,
   values,
-  ingredients,
+  items,
   suppliers,
   error = "",
   saving = false,
@@ -14,9 +14,7 @@ export function BatchFormModal({
   onSubmit,
 }) {
   const isEditing = Boolean(values.id);
-  const selectedIngredient = ingredients.find(
-    (ing) => ing.id === values.ingredientId,
-  );
+  const selectedItem = items.find((item) => item.id === values.itemId);
 
   return (
     <Modal
@@ -42,26 +40,26 @@ export function BatchFormModal({
           ))}
         </Select>
 
-        {values.lockIngredient ? (
+        {values.lockItem ? (
           <Input
             label="Insumo a reabastecer"
             value={
-              selectedIngredient
-                ? `${selectedIngredient.name} (${selectedIngredient.unit})`
-                : values.ingredientId
+              selectedItem
+                ? `${selectedItem.name} (${selectedItem.unit})`
+                : values.itemId
             }
             disabled
           />
         ) : (
           <Select
             label="Insumo a reabastecer"
-            value={values.ingredientId}
-            onChange={(e) => onChange("ingredientId", e.target.value)}
+            value={values.itemId}
+            onChange={(e) => onChange("itemId", e.target.value)}
             required
           >
-            {ingredients.map((ing) => (
-              <option key={ing.id} value={ing.id}>
-                {ing.name} ({ing.unit})
+            {items.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name} ({item.unit})
               </option>
             ))}
           </Select>

@@ -15,10 +15,10 @@ async function runTests() {
 
   // Test 1: Carga inicial y umbrales (Carne < 12 kg -> Estado BAJO)
   console.log('\n--- Test 1: Carga inicial y umbrales ---');
-  const ingredientes = await mockService.getIngredients(fechaTest);
-  console.log(`Total ingredientes cargados: ${ingredientes.length}`);
+  const insumos = await mockService.getItems(fechaTest);
+  console.log(`Total insumos cargados: ${insumos.length}`);
   
-  const carne = ingredientes.find(i => i.id === 'ing-4');
+  const carne = insumos.find(i => i.id === 'item-4');
   console.log(`Carne de Res Molida: Stock=${carne.availableStock} kg, Min=${carne.minStock} kg -> Umbral=${carne.status}`);
   if (carne.status !== EstadoUmbral.BAJO) {
     throw new Error(`Esperado estado BAJO para carne, recibido: ${carne.status}`);
@@ -39,14 +39,14 @@ async function runTests() {
   console.log('\n--- Test 3: Consumo directo de receta y precisión decimal ---');
   // plate-1 (Pizza) consume 0.25 kg harina, 0.20 kg mozzarella, 0.15 l salsa
   // Pedir 4 pizzas consume exactamente 1.0 kg harina, 0.8 kg mozzarella, 0.6 l salsa
-  const harinaAntes = (await mockService.getIngredients(fechaTest)).find(i => i.id === 'ing-1').availableStock;
+  const harinaAntes = (await mockService.getItems(fechaTest)).find(i => i.id === 'item-1').availableStock;
   const consumoDirecto = await mockService.consumeRecipe('plate-1', 4, { fechaReferencia: fechaTest });
 
   if (!consumoDirecto.exito) {
     throw new Error(`Fallo en consumo directo: ${consumoDirecto.motivo}`);
   }
 
-  const harinaDespues = (await mockService.getIngredients(fechaTest)).find(i => i.id === 'ing-1').availableStock;
+  const harinaDespues = (await mockService.getItems(fechaTest)).find(i => i.id === 'item-1').availableStock;
   const diferenciaHarina = Number((harinaAntes - harinaDespues).toFixed(4));
   console.log(`Harina antes: ${harinaAntes} kg, después: ${harinaDespues} kg (Diferencia: ${diferenciaHarina} kg)`);
   if (diferenciaHarina !== 1.0) {
@@ -58,7 +58,7 @@ async function runTests() {
   console.log('\n--- Test 4: Criterio FEFO sobre lotes vigentes ---');
   // Mozzarella tenía lot-201 (vence 2026-10-03, saldo 3kg) y lot-202 (vence 2026-10-18, saldo 9kg)
   // Al consumir las 4 pizzas (0.8 kg mozzarella), el lote descontado debe ser lot-201
-  const trazaMozzarella = consumoDirecto.trazabilidadFEFO.find(t => t.ingredientId === 'ing-2');
+  const trazaMozzarella = consumoDirecto.trazabilidadFEFO.find(t => t.itemId === 'item-2');
   console.log('Desglose FEFO Mozzarella:', JSON.stringify(trazaMozzarella.desgloseLotes));
   if (trazaMozzarella.desgloseLotes[0].loteId !== 'lot-201') {
     throw new Error(`FEFO debió priorizar el lote lot-201, usó: ${trazaMozzarella.desgloseLotes[0].loteId}`);
@@ -74,7 +74,7 @@ async function runTests() {
     providerId: 'prov-3',
     itemsComprados: [
       {
-        ingredientId: 'ing-4', // Carne de res
+        itemId: 'item-4', // Carne de res
         cantidad: 20,
         costoUnitario: 170.0,
         fechaCaducidad: '2026-12-15'
@@ -86,7 +86,7 @@ async function runTests() {
     throw new Error('Fallo al registrar compra');
   }
 
-  const carnePostCompra = (await mockService.getIngredients(fechaTest)).find(i => i.id === 'ing-4');
+  const carnePostCompra = (await mockService.getItems(fechaTest)).find(i => i.id === 'item-4');
   console.log(`Carne tras compra de 20kg: Stock total=${carnePostCompra.totalStock} kg, Nuevo Umbral=${carnePostCompra.status}, CPP=$${carnePostCompra.averageCost}`);
   if (carnePostCompra.totalStock < 25) {
     throw new Error('Stock total no se incrementó debidamente');
@@ -111,7 +111,7 @@ async function runTests() {
   // Test 7: Reset determinista del almacén
   console.log('\n--- Test 7: Reset del estado a fixtures iniciales ---');
   await mockService.reset();
-  const carneTrasReset = (await mockService.getIngredients(fechaTest)).find(i => i.id === 'ing-4');
+  const carneTrasReset = (await mockService.getItems(fechaTest)).find(i => i.id === 'item-4');
   if (carneTrasReset.totalStock !== 5) {
     throw new Error(`Esperado stock inicial de 5kg tras reset, recibido: ${carneTrasReset.totalStock}`);
   }
@@ -119,10 +119,10 @@ async function runTests() {
 
   // Test 8: Catálogo de insumos (SKU único, descripción, perecedero y almacenamiento)
   console.log('\n--- Test 8: SKU, descripción, perecedero y condición de almacenamiento ---');
-  const alta = await mockService.guardarIngrediente({
-    sku: 'ING-TEST-8',
-    name: 'Ingrediente de Prueba E2E',
-    description: 'Descripción opcional del ingrediente de prueba',
+  const alta = await mockService.saveItem({
+    sku: 'ITM-TEST-8',
+    name: 'Insumo de Prueba E2E',
+    description: 'Descripción opcional del insumo de prueba',
     unit: 'kg',
     minStock: 5,
     category: 'Abarrotes',
@@ -130,15 +130,15 @@ async function runTests() {
     storageCondition: 'Refrigerado'
   });
 
-  if (alta.sku !== 'ING-TEST-8' || !alta.description || !alta.isPerishable || alta.storageCondition !== 'Refrigerado') {
+  if (alta.sku !== 'ITM-TEST-8' || !alta.description || !alta.isPerishable || alta.storageCondition !== 'Refrigerado') {
     throw new Error(`Los campos nuevos no se guardaron correctamente: ${JSON.stringify(alta)}`);
   }
 
   let errorSkuDuplicado = '';
   try {
-    await mockService.guardarIngrediente({
-      sku: 'ing-test-8',
-      name: 'Otro Ingrediente de Prueba',
+    await mockService.saveItem({
+      sku: 'itm-test-8',
+      name: 'Otro Insumo de Prueba',
       unit: 'kg',
       minStock: 1,
       category: 'Abarrotes',
@@ -154,8 +154,8 @@ async function runTests() {
 
   let errorSkuVacio = '';
   try {
-    await mockService.guardarIngrediente({
-      name: 'Ingrediente sin SKU',
+    await mockService.saveItem({
+      name: 'Insumo sin SKU',
       unit: 'kg',
       minStock: 1,
       category: 'Abarrotes',

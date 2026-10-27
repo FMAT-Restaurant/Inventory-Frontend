@@ -147,7 +147,7 @@ export function RecipeCard({
             <span style={{ color: "var(--color-muted)" }}>
               Insumos requeridos:
             </span>
-            <span>{recipe.items?.length || 0} ingredientes</span>
+            <span>{recipe.items?.length || 0} insumos</span>
           </div>
         </div>
 
@@ -166,7 +166,7 @@ export function RecipeCard({
           >
             <strong>Insumos sin stock suficiente:</strong>{" "}
             {missingItems
-              .map((i) => i.ingredientName || i.ingredientId)
+              .map((i) => i.itemName || i.itemId)
               .join(", ")}
           </div>
         )}

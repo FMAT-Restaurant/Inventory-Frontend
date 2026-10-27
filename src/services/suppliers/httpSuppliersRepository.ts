@@ -16,9 +16,9 @@
  *
  * Deuda técnica conocida:
  *   La función `request()` está duplicada respecto a
- *   `services/ingredients/httpIngredientsRepository.ts`. Está previsto
+ *   `services/items/httpItemsRepository.ts`. Está previsto
  *   extraerla a `services/http/request.ts` en un PR posterior, coordinado
- *   con el dueño del dominio `ingredients`. Ver `README.md` del módulo.
+ *   con el dueño del dominio `items`. Ver `README.md` del módulo.
  */
 
 import { ENV } from '../../config/env';
@@ -51,7 +51,7 @@ function normalizeSupplier(raw: RawSupplier): Supplier {
 
 /**
  * Helper HTTP genérico. Duplicado respecto a
- * `services/ingredients/httpIngredientsRepository.ts`; ver deuda técnica
+ * `services/items/httpItemsRepository.ts`; ver deuda técnica
  * documentada arriba.
  */
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {

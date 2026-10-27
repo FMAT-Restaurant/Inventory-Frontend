@@ -22,18 +22,17 @@ export const emptyForm = (suppliers = []) => ({
   supplierIdSugested: suppliers[0]?.id || "",
 });
 
-export const formFromIngredients = (ingrediente, suppliers = []) => ({
-  id: ingrediente.id,
-  sku: ingrediente.sku || "",
-  name: ingrediente.name,
-  description: ingrediente.description || "",
-  category: ingrediente.category || "",
-  unit: ingrediente.unit,
-  minStock: String(ingrediente.minStock),
-  isPerishable: Boolean(ingrediente.isPerishable),
-  storageCondition:
-    ingrediente.storageCondition || CONDICIONES_ALMACENAMIENTO[0],
-  supplierIdSugested: ingrediente.supplierIdSugested || suppliers[0]?.id || "",
+export const formFromItem = (item, suppliers = []) => ({
+  id: item.id,
+  sku: item.sku || "",
+  name: item.name,
+  description: item.description || "",
+  category: item.category || "",
+  unit: item.unit,
+  minStock: String(item.minStock),
+  isPerishable: Boolean(item.isPerishable),
+  storageCondition: item.storageCondition || CONDICIONES_ALMACENAMIENTO[0],
+  supplierIdSugested: item.supplierIdSugested || suppliers[0]?.id || "",
 });
 
 export const badgeVariant = (estado) =>
@@ -43,14 +42,14 @@ export const estadoLabel = (estado) =>
   estado === "CRITICO" ? "Agotado" : estado === "BAJO" ? "Bajo" : "Óptimo";
 
 /**
- * Estado de umbral del ingrediente. Si el backend no lo envía, se deriva de
+ * Estado de umbral del insumo. Si el backend no lo envía, se deriva de
  * la misma regla de negocio que usa el inventario (disponible vs. mínimo).
  */
-export const estadoDe = (ingredient) => {
-  if (ingredient?.status) return ingredient.status;
+export const estadoDe = (item) => {
+  if (item?.status) return item.status;
   return calcularEstadoUmbral(
-    Number(ingredient?.availableStock ?? 0),
-    Number(ingredient?.minStock ?? 0),
+    Number(item?.availableStock ?? 0),
+    Number(item?.minStock ?? 0),
   );
 };
 

@@ -47,52 +47,40 @@ export const mockService = {
   },
 
   /**
-   * Obtiene todos los ingredientes con su stock consolidado y estado de umbral
+   * Obtiene todos los items con su stock consolidado y estado de umbral
    */
-  async getIngredientes(fechaReferencia = new Date()) {
+  async getItems(fechaReferencia = new Date()) {
     await delay();
-    return inventoryStore.getIngredientesConsolidados(fechaReferencia);
-  },
-  async getIngredients(fechaReferencia = new Date()) {
-    return this.getIngredientes(fechaReferencia);
+    return inventoryStore.getItems(fechaReferencia);
   },
 
   /**
-   * Obtiene un ingrediente por su ID con el desglose de sus lotes
+   * Obtiene un insumo por su ID con el desglose de sus lotes
    */
-  async getIngredientePorId(id, fechaReferencia = new Date()) {
+  async getItemById(id, fechaReferencia = new Date()) {
     await delay();
-    const ingrediente = inventoryStore.getIngredientesConsolidados(fechaReferencia).find(i => i.id === id);
-    if (!ingrediente) {
-      throw new Error(`Ingrediente no encontrado: ${id}`);
+    const insumo = inventoryStore.getItems(fechaReferencia).find(i => i.id === id);
+    if (!insumo) {
+      throw new Error(`Insumo no encontrado: ${id}`);
     }
-    const lotes = inventoryStore.getLotesByIngredient(id);
-    return { ...ingrediente, lotes };
-  },
-  async getIngredientById(id, fechaReferencia = new Date()) {
-    return this.getIngredientePorId(id, fechaReferencia);
+    const lotes = inventoryStore.getLotesByItem(id);
+    return { ...insumo, lotes };
   },
 
   /**
-   * Crea o actualiza un ingrediente del catálogo.
+   * Crea o actualiza un insumo del catálogo.
    */
-  async guardarIngrediente(data) {
+  async saveItem(data) {
     await delay();
-    return inventoryStore.guardarIngrediente(data);
-  },
-  async saveIngredient(data) {
-    return this.guardarIngrediente(data);
+    return inventoryStore.saveItem(data);
   },
 
   /**
-   * Elimina un ingrediente del catálogo (solo si no tiene existencias).
+   * Elimina un insumo del catálogo (solo si no tiene existencias).
    */
-  async eliminarIngrediente(id) {
+  async deleteItem(id) {
     await delay();
-    return inventoryStore.eliminarIngrediente(id);
-  },
-  async deleteIngredient(id) {
-    return this.eliminarIngrediente(id);
+    return inventoryStore.deleteItem(id);
   },
 
   /**
@@ -129,13 +117,13 @@ export const mockService = {
   },
 
   /**
-   * RF-19 y RF-20: Reporte de ingredientes con existencia actual <= mínimo
+   * RF-19 y RF-20: Reporte de items con existencia actual <= mínimo
    */
   async getAlertasReabastecimiento(fechaReferencia = new Date()) {
     await delay();
-    const ingredientes = inventoryStore.getIngredientesConsolidados(fechaReferencia);
-    return ingredientes.filter(
-      ing => ing.status === EstadoUmbral.BAJO || ing.status === EstadoUmbral.CRITICO
+    const items = inventoryStore.getItems(fechaReferencia);
+    return items.filter(
+      item => item.status === EstadoUmbral.BAJO || item.status === EstadoUmbral.CRITICO
     );
   },
 
@@ -177,7 +165,7 @@ export const mockService = {
       const registroMerma = {
         id: `merma-${Date.now()}-${lote.id}`,
         loteId: lote.id,
-        ingredientId: lote.ingredientId,
+        itemId: lote.itemId,
         cantidad: cantidadPerdida,
         motivo: 'Lote caducado en almacén',
         fecha: new Date().toISOString()
@@ -222,33 +210,33 @@ export const mockService = {
     const lotesNuevos = [];
 
     for (const item of itemsComprados) {
-      const { ingredientId, cantidad, costoUnitario, fechaCaducidad } = item;
+      const { itemId, cantidad, costoUnitario, fechaCaducidad } = item;
       const cantidadNum = roundQuantity(Number(cantidad));
       const costoNum = roundQuantity(Number(costoUnitario), 2);
 
       if (cantidadNum <= 0 || costoNum < 0) {
-        throw new Error(`Valores numéricos inválidos para el insumo ${ingredientId}`);
+        throw new Error(`Valores numéricos inválidos para el insumo ${itemId}`);
       }
 
-      const ingrediente = inventoryStore.ingredientes.find(i => i.id === ingredientId);
-      if (!ingrediente) {
-        throw new Error(`Insumo no encontrado: ${ingredientId}`);
+      const insumo = inventoryStore.items.find(i => i.id === itemId);
+      if (!insumo) {
+        throw new Error(`Insumo no encontrado: ${itemId}`);
       }
 
       // 1. Recalcular Costo Promedio Ponderado (RF-16)
-      const existenciaActual = inventoryStore.getExistenciaTotal(ingredientId);
+      const existenciaActual = inventoryStore.getExistenciaTotal(itemId);
       const nuevoCPP = calcularCostoPonderado(
         existenciaActual,
-        ingrediente.averageCost,
+        insumo.averageCost,
         cantidadNum,
         costoNum
       );
-      ingrediente.averageCost = nuevoCPP;
+      insumo.averageCost = nuevoCPP;
 
       // 2. Generar Lote (RF-14 y RF-15)
       const nuevoLote = {
         id: `lot-${Date.now().toString().slice(-4)}-${Math.floor(Math.random() * 1000)}`,
-        ingredientId,
+        itemId,
         cantidadInicial: cantidadNum,
         cantidadActual: cantidadNum,
         costoUnitario: costoNum,
@@ -309,24 +297,24 @@ export const mockService = {
     const cantPorciones = Math.max(1, Number(cantidad));
     const fechaRef = options.fechaReferencia || new Date();
 
-    // 1. Calcular ingredientes totales requeridos
+    // 1. Calcular items totales requeridos
     const requeridos = platillo.receta.map(item => ({
-      ingredientId: item.ingredientId,
+      itemId: item.itemId,
       cantidadRequerida: roundQuantity(item.cantidad * cantPorciones)
     }));
 
-    // 2. Validar existencias disponibles de todos los ingredientes (No Negativo atómico)
+    // 2. Validar existencias disponibles de todos los items (No Negativo atómico)
     const faltantes = [];
     for (const req of requeridos) {
-      const existenciaTotal = inventoryStore.getExistenciaTotal(req.ingredientId, fechaRef);
-      const stockReservado = inventoryStore.getStockReservado(req.ingredientId);
+      const existenciaTotal = inventoryStore.getExistenciaTotal(req.itemId, fechaRef);
+      const stockReservado = inventoryStore.getStockReservado(req.itemId);
       const check = validarStockDisponible(existenciaTotal, stockReservado, req.cantidadRequerida);
 
       if (!check.esValido) {
-        const ing = inventoryStore.ingredientes.find(i => i.id === req.ingredientId);
+        const item = inventoryStore.items.find(i => i.id === req.itemId);
         faltantes.push({
-          ingredientId: req.ingredientId,
-          name: ing?.name || req.ingredientId,
+          itemId: req.itemId,
+          name: item?.name || req.itemId,
           requerido: req.cantidadRequerida,
           disponible: check.availableStock,
           faltante: check.faltante
@@ -347,12 +335,12 @@ export const mockService = {
     const trazaConsumoGlobal = [];
 
     for (const req of requeridos) {
-      const lotesIng = inventoryStore.lotes.filter(l => l.ingredientId === req.ingredientId);
+      const lotesIng = inventoryStore.lotes.filter(l => l.itemId === req.itemId);
       const resultadoFEFO = descontarLotesFEFO(lotesIng, req.cantidadRequerida, fechaRef);
 
       // Si por alguna razón los lotes vigentes no alcanzaron (ej. caducados), rollback
       if (resultadoFEFO.cantidadRestante > 0) {
-        throw new Error(`Inconsistencia en lotes vigentes para el insumo ${req.ingredientId}`);
+        throw new Error(`Inconsistencia en lotes vigentes para el insumo ${req.itemId}`);
       }
 
       // Aplicar mutación a los lotes en el almacén
@@ -364,7 +352,7 @@ export const mockService = {
       }
 
       trazaConsumoGlobal.push({
-        ingredientId: req.ingredientId,
+        itemId: req.itemId,
         cantidadConsumida: req.cantidadRequerida,
         desgloseLotes: resultadoFEFO.trazaDescuentos
       });
@@ -411,7 +399,7 @@ export const mockService = {
       };
     }
 
-    // 1. Calcular total de ingredientes requeridos a partir de las recetas
+    // 1. Calcular total de items requeridos a partir de las recetas
     const consolidadoRequerido = new Map();
     const platillosMap = new Map(inventoryStore.platillos.map(p => [p.plateId, p]));
 
@@ -420,10 +408,10 @@ export const mockService = {
       if (!platillo) {
         throw new Error(`Platillo no encontrado en catálogo: ${pedido.plateId}`);
       }
-      for (const ing of platillo.receta) {
-        const totalNecesario = roundQuantity(ing.cantidad * pedido.cantidad);
-        const acumulado = consolidadoRequerido.get(ing.ingredientId) || 0;
-        consolidadoRequerido.set(ing.ingredientId, roundQuantity(acumulado + totalNecesario));
+      for (const item of platillo.receta) {
+        const totalNecesario = roundQuantity(item.cantidad * pedido.cantidad);
+        const acumulado = consolidadoRequerido.get(item.itemId) || 0;
+        consolidadoRequerido.set(item.itemId, roundQuantity(acumulado + totalNecesario));
       }
     }
 
@@ -431,23 +419,23 @@ export const mockService = {
     const faltantes = [];
     const itemsReserva = [];
 
-    for (const [ingredientId, requerido] of consolidadoRequerido.entries()) {
-      const existenciaTotal = inventoryStore.getExistenciaTotal(ingredientId, fechaReferencia);
-      const stockReservado = inventoryStore.getStockReservado(ingredientId);
+    for (const [itemId, requerido] of consolidadoRequerido.entries()) {
+      const existenciaTotal = inventoryStore.getExistenciaTotal(itemId, fechaReferencia);
+      const stockReservado = inventoryStore.getStockReservado(itemId);
       const check = validarStockDisponible(existenciaTotal, stockReservado, requerido);
 
       if (!check.esValido) {
-        const ing = inventoryStore.ingredientes.find(i => i.id === ingredientId);
+        const item = inventoryStore.items.find(i => i.id === itemId);
         faltantes.push({
-          ingredientId,
-          name: ing?.name || ingredientId,
+          itemId,
+          name: item?.name || itemId,
           requerido,
           disponible: check.availableStock,
           faltante: check.faltante
         });
       } else {
         itemsReserva.push({
-          ingredientId,
+          itemId,
           cantidad: requerido
         });
       }
@@ -520,10 +508,10 @@ export const mockService = {
 
     const trazaConsumoGlobal = [];
 
-    // Descontar cada ingrediente reservado aplicando FEFO sobre los lotes vigentes
+    // Descontar cada insumo reservado aplicando FEFO sobre los lotes vigentes
     for (const item of reserva.items) {
-      const lotesIngrediente = inventoryStore.lotes.filter(l => l.ingredientId === item.ingredientId);
-      const resultadoFEFO = descontarLotesFEFO(lotesIngrediente, item.cantidad, fechaReferencia);
+      const lotesItem = inventoryStore.lotes.filter(l => l.itemId === item.itemId);
+      const resultadoFEFO = descontarLotesFEFO(lotesItem, item.cantidad, fechaReferencia);
 
       for (const loteActualizado of resultadoFEFO.lotesActualizados) {
         const index = inventoryStore.lotes.findIndex(l => l.id === loteActualizado.id);
@@ -533,7 +521,7 @@ export const mockService = {
       }
 
       trazaConsumoGlobal.push({
-        ingredientId: item.ingredientId,
+        itemId: item.itemId,
         cantidadConsumida: item.cantidad,
         desgloseLotes: resultadoFEFO.trazaDescuentos
       });

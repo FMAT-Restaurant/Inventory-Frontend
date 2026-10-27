@@ -3,7 +3,7 @@ import { Input, Select } from "../../../components/ui/Input.jsx";
 import { Modal } from "../../../components/ui/Modal.jsx";
 import { CONDICIONES_ALMACENAMIENTO, UNIDADES } from "../constants.js";
 
-export function IngredientFormModal({
+export function ItemFormModal({
   isOpen,
   values,
   suppliers,
@@ -19,7 +19,7 @@ export function IngredientFormModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={isEditing ? "Editar Ingrediente" : "Nuevo Ingrediente"}
+      title={isEditing ? "Editar insumo" : "Nuevo insumo"}
     >
       <form
         onSubmit={onSubmit}
@@ -34,7 +34,7 @@ export function IngredientFormModal({
         >
           <Input
             label="SKU"
-            placeholder="Ej. ING-0001"
+            placeholder="Ej. ITM-0001"
             value={values.sku}
             onChange={(e) => onChange("sku", e.target.value)}
             required
@@ -172,7 +172,7 @@ export function IngredientFormModal({
               ? "Guardando..."
               : isEditing
                 ? "Guardar cambios"
-                : "Agregar ingrediente"}
+                : "Agregar insumo"}
           </Button>
         </div>
       </form>

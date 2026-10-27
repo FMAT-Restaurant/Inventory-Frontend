@@ -7,7 +7,7 @@ export type BatchStatus = "active" | "expires_today" | "expired" | "depleted";
 export interface Batch {
   id: string;
   batchNumber: string;
-  ingredientId: string;
+  itemId: string;
   supplierId: string | null;
   initialQuantity: number;
   quantity: number;
@@ -19,7 +19,7 @@ export interface Batch {
 
 export interface CreateBatchInput {
   batchNumber?: string;
-  ingredientId: string;
+  itemId: string;
   supplierId?: string | null;
   quantity: number;
   cost: number;
@@ -37,7 +37,7 @@ export interface UpdateBatchInput {
  * Implementado por el repositorio mock (dev) y el HTTP (qa/prod).
  */
 export interface BatchesRepository {
-  list(ingredientId?: string): Promise<Batch[]>;
+  list(itemId?: string): Promise<Batch[]>;
   getById(id: string): Promise<Batch | null>;
   create(input: CreateBatchInput): Promise<Batch>;
   update(id: string, input: UpdateBatchInput): Promise<Batch>;

@@ -1,18 +1,18 @@
 import { useState } from "react";
 import { useBatches } from "./hooks/useBatches.js";
 import { BatchesToolbar } from "./components/BatchesToolbar.jsx";
-import { BatchIngredientCard } from "./components/BatchIngredientCard.jsx";
+import { BatchItemCard } from "./components/BatchItemCard.jsx";
 import { BatchesEmptyState } from "./components/BatchesEmptyState.jsx";
 import { BatchFormModal } from "./components/BatchFormModal.jsx";
 import { ConfirmModal } from "../../components/ui/ConfirmModal.jsx";
 import { emptyBatchForm, formFromBatch } from "./constants.js";
 
-export function BatchesPage({ preselectedIngredientId }) {
+export function BatchesPage({ preselectedItemId }) {
   const {
-    ingredients,
-    batchesByIngredientId,
+    items,
+    batchesByItemId,
     suppliers,
-    filteredIngredients,
+    filteredItems,
     filters,
     updateFilters,
     loading,
@@ -30,26 +30,24 @@ export function BatchesPage({ preselectedIngredientId }) {
   const [expandedBatches, setExpandedBatches] = useState({});
   const [batchToDelete, setBatchToDelete] = useState(null);
 
-  const toggleExpand = (ingredientId) => {
+  const toggleExpand = (itemId) => {
     setExpandedBatches((prev) => ({
       ...prev,
-      [ingredientId]: !prev[ingredientId],
+      [itemId]: !prev[itemId],
     }));
   };
 
-  // Botón general "Registrar compra": permite elegir cualquier ingrediente
+  // Botón general "Registrar compra": permite elegir cualquier insumo
   const openCreateGeneral = () => {
     clearMessage();
-    setForm(
-      emptyBatchForm(suppliers, ingredients, preselectedIngredientId || ""),
-    );
+    setForm(emptyBatchForm(suppliers, items, preselectedItemId || ""));
     setModalOpen(true);
   };
 
-  // Botón "+ Comprar" de un ingrediente específico: bloquea ese ingrediente
-  const openCreateForIngredient = (ingredientId) => {
+  // Botón "+ Comprar" de un insumo específico: bloquea ese insumo
+  const openCreateForItem = (itemId) => {
     clearMessage();
-    setForm(emptyBatchForm(suppliers, ingredients, ingredientId));
+    setForm(emptyBatchForm(suppliers, items, itemId));
     setModalOpen(true);
   };
 
@@ -62,7 +60,7 @@ export function BatchesPage({ preselectedIngredientId }) {
   const closeModal = () => {
     if (saving) return;
     setModalOpen(false);
-    setForm(emptyBatchForm(suppliers, ingredients));
+    setForm(emptyBatchForm(suppliers, items));
     clearMessage();
   };
 
@@ -80,26 +78,25 @@ export function BatchesPage({ preselectedIngredientId }) {
           expirationDate: form.expirationDate,
         });
       } else {
-        const targetIngredientId =
-          form.ingredientId || ingredients[0]?.id || "";
+        const targetItemId = form.itemId || items[0]?.id || "";
         await createBatch({
           batchNumber: form.batchNumber?.trim() || undefined,
-          ingredientId: targetIngredientId,
+          itemId: targetItemId,
           supplierId: form.supplierId || null,
           quantity: Number(form.quantity),
           cost: Number(form.cost),
           expirationDate: form.expirationDate,
         });
-        // Expandir automáticamente los lotes del ingrediente al que se le registró compra
-        if (targetIngredientId) {
+        // Expandir automáticamente los lotes del insumo al que se le registró compra
+        if (targetItemId) {
           setExpandedBatches((prev) => ({
             ...prev,
-            [targetIngredientId]: true,
+            [targetItemId]: true,
           }));
         }
       }
       setModalOpen(false);
-      setForm(emptyBatchForm(suppliers, ingredients));
+      setForm(emptyBatchForm(suppliers, items));
     } catch {
       // El hook expone el error para mostrarlo en el modal.
     }
@@ -152,25 +149,25 @@ export function BatchesPage({ preselectedIngredientId }) {
         disabled={loading}
       />
 
-      {loading && filteredIngredients.length === 0 ? (
+      {loading && filteredItems.length === 0 ? (
         <BatchesEmptyState loading />
-      ) : filteredIngredients.length === 0 ? (
+      ) : filteredItems.length === 0 ? (
         <BatchesEmptyState />
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          {filteredIngredients.map((ingredient) => {
-            const ingredientBatches =
-              batchesByIngredientId.get(ingredient.id) ?? [];
-            const isExpanded = Boolean(expandedBatches[ingredient.id]);
+          {filteredItems.map((item) => {
+            const itemBatches =
+              batchesByItemId.get(item.id) ?? [];
+            const isExpanded = Boolean(expandedBatches[item.id]);
 
             return (
-              <BatchIngredientCard
-                key={ingredient.id}
-                ingredient={ingredient}
-                batches={ingredientBatches}
+              <BatchItemCard
+                key={item.id}
+                item={item}
+                batches={itemBatches}
                 expanded={isExpanded}
-                onToggleExpand={() => toggleExpand(ingredient.id)}
-                onNewPurchase={() => openCreateForIngredient(ingredient.id)}
+                onToggleExpand={() => toggleExpand(item.id)}
+                onNewPurchase={() => openCreateForItem(item.id)}
                 onEditBatch={openEditBatch}
                 onDeleteBatch={requestDeleteBatch}
                 disabled={saving}
@@ -183,7 +180,7 @@ export function BatchesPage({ preselectedIngredientId }) {
       <BatchFormModal
         isOpen={modalOpen}
         values={form}
-        ingredients={ingredients}
+        items={items}
         suppliers={suppliers}
         error={error || ""}
         saving={saving}

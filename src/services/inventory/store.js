@@ -4,7 +4,7 @@
  */
 
 import {
-  initialIngredientes,
+  initialItems,
   initialLotes,
   initialPlatillos,
   initialProveedores
@@ -17,7 +17,7 @@ import {
 } from './businessRules.js';
 import { EstadoLote, EstadoReserva } from './types.js';
 
-let ingredientIdCounter = 0;
+let itemIdCounter = 0;
 
 class InventoryStore {
   constructor() {
@@ -31,10 +31,10 @@ class InventoryStore {
    */
   reset() {
     this.proveedores = JSON.parse(JSON.stringify(initialProveedores));
-    this.ingredientes = JSON.parse(JSON.stringify(initialIngredientes));
+    this.items = JSON.parse(JSON.stringify(initialItems));
     this.lotes = JSON.parse(JSON.stringify(initialLotes));
     this.platillos = JSON.parse(JSON.stringify(initialPlatillos));
-    this.reservas = []; // [{ orderId, requestId, estado, items: [{ ingredientId, cantidad }] }]
+    this.reservas = []; // [{ orderId, requestId, estado, items: [{ itemId, cantidad }] }]
     this.compras = [];
     this.mermas = [];
     this.historialMovimientos = [];
@@ -77,23 +77,23 @@ class InventoryStore {
   }
 
   /**
-   * Obtiene la suma de stock reservado activo para un ingrediente
+   * Obtiene la suma de stock reservado activo para un insumo
    */
-  getStockReservado(ingredientId) {
+  getStockReservado(itemId) {
     const totalReservado = this.reservas
       .filter(r => r.estado === EstadoReserva.RESERVADO)
       .reduce((acc, r) => {
-        const item = r.items.find(i => i.ingredientId === ingredientId);
+        const item = r.items.find(i => i.itemId === itemId);
         return acc + (item ? item.cantidad : 0);
       }, 0);
     return roundQuantity(totalReservado);
   }
 
   /**
-   * Obtiene los lotes de un ingrediente
+   * Obtiene los lotes de un insumo
    */
-  getLotesByIngredient(ingredientId) {
-    return this.lotes.filter(l => l.ingredientId === ingredientId);
+  getLotesByItem(itemId) {
+    return this.lotes.filter(l => l.itemId === itemId);
   }
 
   /**
@@ -111,10 +111,10 @@ class InventoryStore {
   }
 
   /**
-   * Crea o actualiza un ingrediente del catálogo (RF de catálogo de insumos).
-   * Si `data.id` coincide con un ingrediente existente se actualiza; en caso contrario se crea.
+   * Crea o actualiza un insumo del catálogo (RF de catálogo de insumos).
+   * Si `data.id` coincide con un insumo existente se actualiza; en caso contrario se crea.
    */
-  guardarIngrediente(data = {}) {
+  saveItem(data = {}) {
     const name = (data.name || '').trim();
     const unit = (data.unit || '').trim();
     const sku = (data.sku || '').trim();
@@ -122,13 +122,13 @@ class InventoryStore {
     const description = (data.description || '').trim();
 
     if (!name) {
-      throw new Error('El nombre del ingrediente es obligatorio.');
+      throw new Error('El nombre del insumo es obligatorio.');
     }
     if (!unit) {
       throw new Error('La unidad de medida es obligatoria.');
     }
     if (!sku) {
-      throw new Error('El SKU del ingrediente es obligatorio.');
+      throw new Error('El SKU del insumo es obligatorio.');
     }
     if (!storageCondition) {
       throw new Error('La condición de almacenamiento es obligatoria.');
@@ -145,18 +145,18 @@ class InventoryStore {
       throw new Error('El costo promedio debe ser un número mayor o igual a 0');
     }
 
-    const duplicado = this.ingredientes.find(
+    const duplicado = this.items.find(
       i => i.name.toLowerCase() === name.toLowerCase() && i.id !== data.id
     );
     if (duplicado) {
-      throw new Error(`Ya existe un ingrediente con el nombre "${name}".`);
+      throw new Error(`Ya existe un insumo con el nombre "${name}".`);
     }
 
-    const duplicadoSku = this.ingredientes.find(
+    const duplicadoSku = this.items.find(
       i => (i.sku || '').toLowerCase() === sku.toLowerCase() && i.id !== data.id
     );
     if (duplicadoSku) {
-      throw new Error(`Ya existe un ingrediente con el SKU "${sku}".`);
+      throw new Error(`Ya existe un insumo con el SKU "${sku}".`);
     }
 
     const datosBase = {
@@ -173,56 +173,56 @@ class InventoryStore {
     };
 
     if (data.id) {
-      const index = this.ingredientes.findIndex(i => i.id === data.id);
+      const index = this.items.findIndex(i => i.id === data.id);
       if (index === -1) {
-        throw new Error(`Ingrediente no encontrado: ${data.id}`);
+        throw new Error(`Insumo no encontrado: ${data.id}`);
       }
-      this.ingredientes[index] = { ...this.ingredientes[index], ...datosBase };
+      this.items[index] = { ...this.items[index], ...datosBase };
       this.notify();
-      return { ...this.ingredientes[index] };
+      return { ...this.items[index] };
     }
 
-    const nuevoIngrediente = {
-      id: `ing-${Date.now().toString(36)}-${(ingredientIdCounter += 1).toString(36)}`,
+    const newItem = {
+      id: `item-${Date.now().toString(36)}-${(itemIdCounter += 1).toString(36)}`,
       ...datosBase
     };
-    this.ingredientes.push(nuevoIngrediente);
+    this.items.push(newItem);
     this.notify();
-    return { ...nuevoIngrediente };
+    return { ...newItem };
   }
 
   /**
-   * Elimina un ingrediente del catálogo. No permite eliminar si tiene lotes activos con existencia.
+   * Elimina un insumo del catálogo. No permite eliminar si tiene lotes activos con existencia.
    */
-  eliminarIngrediente(ingredienteId) {
-    const index = this.ingredientes.findIndex(i => i.id === ingredienteId);
+  deleteItem(itemId) {
+    const index = this.items.findIndex(i => i.id === itemId);
     if (index === -1) {
-      throw new Error(`Ingrediente no encontrado: ${ingredienteId}`);
+      throw new Error(`Insumo no encontrado: ${itemId}`);
     }
 
     const tieneStock = this.lotes.some(
-      l => l.ingredientId === ingredienteId && l.cantidadActual > 0
+      l => l.itemId === itemId && l.cantidadActual > 0
     );
     if (tieneStock) {
-      throw new Error('No se puede eliminar un ingrediente con existencias en almacén.');
+      throw new Error('No se puede eliminar un insumo con existencias en almacén.');
     }
 
-    const [eliminado] = this.ingredientes.splice(index, 1);
-    this.lotes = this.lotes.filter(l => l.ingredientId !== ingredienteId);
+    const [eliminado] = this.items.splice(index, 1);
+    this.lotes = this.lotes.filter(l => l.itemId !== itemId);
     this.notify();
     return { ...eliminado };
   }
 
   /**
    * Obtiene la existencia física total vigente (lotes activos y no vencidos respecto a fechaReferencia)
-   * @param {string} ingredientId
+   * @param {string} itemId
    * @param {Date|string} fechaReferencia
    */
-  getExistenciaTotal(ingredientId, fechaReferencia = new Date()) {
+  getExistenciaTotal(itemId, fechaReferencia = new Date()) {
     const refDate = new Date(fechaReferencia);
     const totalVigente = this.lotes
       .filter(l => {
-        if (l.ingredientId !== ingredientId || l.estado !== EstadoLote.ACTIVO || l.cantidadActual <= 0) {
+        if (l.itemId !== itemId || l.estado !== EstadoLote.ACTIVO || l.cantidadActual <= 0) {
           return false;
         }
         return new Date(l.fechaCaducidad) >= refDate;
@@ -233,18 +233,18 @@ class InventoryStore {
   }
 
   /**
-   * Genera la lista consolidada de ingredientes con stock físico vigente, reservado, disponible y umbrales
+   * Genera la lista consolidada de insumos con stock físico vigente, reservado, disponible y umbrales
    */
-  getIngredientesConsolidados(fechaReferencia = new Date()) {
-    return this.ingredientes.map(ing => {
-      const totalStock = this.getExistenciaTotal(ing.id, fechaReferencia);
-      const reservedStock = this.getStockReservado(ing.id);
+  getItems(fechaReferencia = new Date()) {
+    return this.items.map(item => {
+      const totalStock = this.getExistenciaTotal(item.id, fechaReferencia);
+      const reservedStock = this.getStockReservado(item.id);
       const availableStock = roundQuantity(Math.max(0, totalStock - reservedStock));
-      const status = calcularEstadoUmbral(availableStock, ing.minStock);
-      const supplierSugested = this.proveedores.find(p => p.id === ing.supplierIdSugested);
+      const status = calcularEstadoUmbral(availableStock, item.minStock);
+      const supplierSugested = this.proveedores.find(p => p.id === item.supplierIdSugested);
 
       return {
-        ...ing,
+        ...item,
         totalStock,
         reservedStock,
         availableStock,
@@ -258,11 +258,11 @@ class InventoryStore {
    * Retorna los platillos con disponibilidad, recetas agotadas y costo de insumos calculado
    */
   getPlatillosConsolidados(fechaReferencia = new Date()) {
-    const ingredientesConsolidados = this.getIngredientesConsolidados(fechaReferencia);
+    const itemsConsolidados = this.getItems(fechaReferencia);
     const stockMap = new Map(
-      ingredientesConsolidados.map(ing => [
-        ing.id,
-        { availableStock: ing.availableStock, name: ing.name, averageCost: ing.averageCost }
+      itemsConsolidados.map(item => [
+        item.id,
+        { availableStock: item.availableStock, name: item.name, averageCost: item.averageCost }
       ])
     );
 
@@ -274,7 +274,7 @@ class InventoryStore {
         ...platillo,
         disponible: evaluacion.disponible,
         unidadesPreparables: evaluacion.unidadesPreparables,
-        ingredientesDetalle: evaluacion.ingredientesDetalle,
+        itemsDetalle: evaluacion.itemsDetalle,
         faltantes: evaluacion.faltantes,
         costoProduccion
       };
@@ -286,7 +286,7 @@ class InventoryStore {
    */
   getSnapshot(fechaReferencia = new Date()) {
     return {
-      ingredientes: this.getIngredientesConsolidados(fechaReferencia),
+      items: this.getItems(fechaReferencia),
       lotes: [...this.lotes],
       platillos: this.getPlatillosConsolidados(fechaReferencia),
       proveedores: [...this.proveedores],

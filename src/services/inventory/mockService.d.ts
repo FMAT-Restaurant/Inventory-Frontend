@@ -11,7 +11,7 @@ export interface MockProveedor {
   phone?: string;
 }
 
-export interface MockIngrediente {
+export interface MockItem {
   id: string;
   nombre: string;
   unidad: string;
@@ -28,7 +28,7 @@ export interface MockIngrediente {
 
 export interface MockLote {
   id: string;
-  ingredientId: string;
+  itemId: string;
   cantidadInicial: number;
   cantidadActual: number;
   costoUnitario: number;
@@ -44,10 +44,10 @@ export interface MockPlatillo {
   descripcion: string;
   categoria: string;
   precioVenta: number;
-  receta: Array<{ ingredientId: string; cantidad: number }>;
+  receta: Array<{ itemId: string; cantidad: number }>;
   disponible?: boolean;
   unidadesPreparables?: number;
-  ingredientesDetalle?: unknown[];
+  itemsDetalle?: unknown[];
   faltantes?: unknown[];
   costoProduccion?: number;
 }
@@ -60,7 +60,7 @@ export interface MockMovimiento {
 }
 
 export interface MockSnapshot {
-  ingredientes: MockIngrediente[];
+  items: MockItem[];
   lotes: MockLote[];
   platillos: MockPlatillo[];
   proveedores: MockProveedor[];
@@ -74,11 +74,11 @@ export interface MockService {
   subscribe(listener: (snapshot: MockSnapshot) => void): () => void;
   getSnapshot(fechaReferencia?: Date): MockSnapshot;
 
-  // Ingredientes
-  getIngredientes(fechaReferencia?: Date): Promise<MockIngrediente[]>;
-  getIngredientePorId(id: string, fechaReferencia?: Date): Promise<MockIngrediente & { lotes: MockLote[] }>;
-  guardarIngrediente(data: object): Promise<MockIngrediente>;
-  eliminarIngrediente(id: string): Promise<MockIngrediente>;
+  // Insumos
+  getItems(fechaReferencia?: Date): Promise<MockItem[]>;
+  getItemById(id: string, fechaReferencia?: Date): Promise<MockItem & { lotes: MockLote[] }>;
+  saveItem(data: object): Promise<MockItem>;
+  deleteItem(id: string): Promise<MockItem>;
 
   // Proveedores
   getProveedores(): Promise<MockProveedor[]>;
@@ -93,7 +93,7 @@ export interface MockService {
   registrarCompraProveedor(payload: {
     providerId: string;
     itemsComprados: Array<{
-      ingredientId: string;
+      itemId: string;
       cantidad: number;
       costoUnitario: number;
       fechaCaducidad: string;

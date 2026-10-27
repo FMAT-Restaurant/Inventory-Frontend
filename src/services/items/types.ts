@@ -1,5 +1,5 @@
 /**
- * Tipos del dominio de ingredientes expuestos a la UI.
+ * Tipos del dominio de items expuestos a la UI.
  */
 
 export type EstadoUmbral = "OPTIMO" | "BAJO" | "CRITICO";
@@ -11,7 +11,7 @@ export interface Supplier {
   phone?: string;
 }
 
-export interface Ingredient {
+export interface Item {
   id: string;
   sku: string;
   name: string;
@@ -30,7 +30,7 @@ export interface Ingredient {
   status: EstadoUmbral;
 }
 
-export interface IngredientInput {
+export interface ItemInput {
   id?: string;
   sku: string;
   name: string;
@@ -45,14 +45,14 @@ export interface IngredientInput {
 }
 
 /**
- * Contrato único de acceso a datos de ingredientes.
+ * Contrato único de acceso a datos de items.
  * Implementado por el repositorio mock (dev) y el HTTP (qa/prod).
  */
-export interface IngredientsRepository {
-  list(): Promise<Ingredient[]>;
-  getById(id: string): Promise<Ingredient | null>;
-  create(input: IngredientInput): Promise<Ingredient>;
-  update(id: string, input: IngredientInput): Promise<Ingredient>;
+export interface ItemsRepository {
+  list(): Promise<Item[]>;
+  getById(id: string): Promise<Item | null>;
+  create(input: ItemInput): Promise<Item>;
+  update(id: string, input: ItemInput): Promise<Item>;
   remove(id: string): Promise<void>;
   listSuppliers(): Promise<Supplier[]>;
   subscribe?(listener: () => void): () => void;
