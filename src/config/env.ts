@@ -21,7 +21,7 @@ function resolveAppEnv(): AppEnv {
 }
 
 function resolveApiUrl(): string {
-  const url = import.meta.env.VITE_API_URL || '';
+  const url = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1/inventory';
   let end = url.length;
   while (end > 0 && url[end - 1] === '/') {
     end -= 1;

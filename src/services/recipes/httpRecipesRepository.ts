@@ -73,12 +73,27 @@ async function request<T>(
 ): Promise<{ data: T; status: number }> {
   let response: Response;
   try {
+    const getAuthToken = (): string | undefined => {
+      try {
+        const raw = localStorage.getItem('fmat_restaurant_auth_session');
+        if (!raw) return undefined;
+        const parsed = JSON.parse(raw);
+        return parsed?.accessToken || parsed?.token;
+      } catch {
+        return undefined;
+      }
+    };
+    const token = getAuthToken();
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      ...(options.headers as Record<string, string> ?? {}),
+    };
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
     response = await fetch(`${ENV.API_URL}${path}`, {
       ...options,
-      headers: {
-        "Content-Type": "application/json",
-        ...(options.headers ?? {}),
-      },
+      headers,
     });
   } catch {
     throw new Error(

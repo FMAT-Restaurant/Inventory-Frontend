@@ -58,13 +58,30 @@ function normalizeBatch(raw: RawBatch): Batch {
   };
 }
 
+const getAuthToken = (): string | undefined => {
+  try {
+    const raw = localStorage.getItem('fmat_restaurant_auth_session');
+    if (!raw) return undefined;
+    const parsed = JSON.parse(raw);
+    return parsed?.accessToken || parsed?.token;
+  } catch {
+    return undefined;
+  }
+};
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const token = getAuthToken();
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(options.headers as Record<string, string> ?? {}),
+  };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
   const response = await fetch(`${ENV.API_URL}${path}`, {
     ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers ?? {}),
-    },
+    headers,
   });
 
   if (!response.ok) {
