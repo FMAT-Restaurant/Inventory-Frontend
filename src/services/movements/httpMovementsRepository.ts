@@ -7,7 +7,7 @@
  * Los movimientos son de solo lectura.
  */
 
-import { ENV } from "../../config/env";
+import { request } from "../http/client";
 import type {
   MovementFilters,
   MovementType,
@@ -52,57 +52,6 @@ function normalizeMovement(raw: RawMovement): StockMovement {
     createdBy: raw.createdBy ? String(raw.createdBy) : "system",
     createdAt: raw.createdAt ?? "",
   };
-}
-
-const getAuthToken = (): string | undefined => {
-  try {
-    const raw = localStorage.getItem("fmat_restaurant_auth_session");
-    if (!raw) return undefined;
-    const parsed = JSON.parse(raw);
-    return parsed?.accessToken || parsed?.token;
-  } catch {
-    return undefined;
-  }
-};
-
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const token = getAuthToken();
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    ...((options.headers as Record<string, string>) ?? {}),
-  };
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-
-  const response = await fetch(`${ENV.API_URL}${path}`, {
-    ...options,
-    headers,
-  });
-
-  if (!response.ok) {
-    let detail = "";
-    try {
-      const body = await response.json();
-      detail = Array.isArray(body?.message)
-        ? body.message.join(", ")
-        : body?.message || body?.error || "";
-    } catch {
-      detail = "";
-    }
-    throw new Error(detail || `Error ${response.status} al consumir ${path}`);
-  }
-
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  const raw = await response.text();
-  if (!raw) {
-    return undefined as T;
-  }
-
-  return JSON.parse(raw) as T;
 }
 
 function buildQuery(filters: MovementFilters): string {

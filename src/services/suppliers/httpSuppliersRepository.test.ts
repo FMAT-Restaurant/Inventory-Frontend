@@ -30,7 +30,7 @@ const RAW_SUPPLIER = {
 /**
  * Crea una respuesta HTTP falsa a partir del body y del status.
  * `fetch` en jsdom devuelve un `Response`, pero el repo solo usa
- * `.ok`, `.status`, `.json()`. Con un objeto que los exponga basta.
+ * `.ok`, `.status`, `.json()` y `.text()`. Con un objeto que los exponga basta.
  */
 function mockResponse(body: unknown, init: { status?: number } = {}) {
   const status = init.status ?? 200;
@@ -38,6 +38,7 @@ function mockResponse(body: unknown, init: { status?: number } = {}) {
     ok: status >= 200 && status < 300,
     status,
     json: async () => body,
+    text: async () => JSON.stringify(body),
   } as unknown as Response;
 }
 
@@ -105,7 +106,7 @@ describe('httpSuppliersRepository', () => {
       );
     });
 
-    it('une múltiples mensajes de validación (array) con "; "', async () => {
+    it('une múltiples mensajes de validación (array) con ", "', async () => {
       fetchMock.mockResolvedValueOnce(
         mockResponse(
           {
@@ -118,7 +119,7 @@ describe('httpSuppliersRepository', () => {
       );
 
       await expect(httpSuppliersRepository.list()).rejects.toThrow(
-        'name should not be empty; email must be an email',
+        'name should not be empty, email must be an email',
       );
     });
 

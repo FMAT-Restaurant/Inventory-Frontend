@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { AUTH_STORAGE_KEY, getStoredSession } from "./services/http/client";
 import { InventoryProvider } from "./context/InventoryContext.jsx";
 import { Shell } from "./components/layout/Shell.jsx";
 import { MainMenu } from "./pages/mainMenu/MainMenu.jsx";
@@ -35,30 +36,18 @@ export const hasPermission = (
   return user.permissions.includes(requiredPermission);
 };
 
-const getStoredSession = (): {
-  accessToken?: string;
-  user?: ShellUser;
-} | null => {
-  try {
-    const raw = localStorage.getItem("fmat_restaurant_auth_session");
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-};
-
 type ModuleTab =
   "items" | "batches" | "proveedores" | "recetas" | "movimientos";
 
 function MainApp({ token, currentUser }: FederatedModuleProps) {
   const stored = getStoredSession();
   const activeToken = token ?? stored?.accessToken;
-  const activeUser = currentUser ?? stored?.user;
+  const activeUser = currentUser ?? (stored?.user as ShellUser | undefined);
 
   if (activeToken) {
     try {
       localStorage.setItem(
-        "fmat_restaurant_auth_session",
+        AUTH_STORAGE_KEY,
         JSON.stringify({ accessToken: activeToken, user: activeUser }),
       );
     } catch {

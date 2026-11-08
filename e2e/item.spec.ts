@@ -290,7 +290,7 @@ test.describe("Demo de fixtures de Playwright", () => {
     await demoPage.close();
 
     // 3) request -> APIRequestContext. Comparte el `baseURL` del config
-    //    (el dev server de Vite en :5173), por eso usamos URL absoluta para
+    //    (el dev server de Vite en :5176), por eso usamos URL absoluta para
     //    pegarle directo al backend en :3000.
     const res = await request.get("http://localhost:3000/items");
     expect(res.ok()).toBeTruthy();

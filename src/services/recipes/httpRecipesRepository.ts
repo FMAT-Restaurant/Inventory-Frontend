@@ -10,6 +10,7 @@
  */
 
 import { ENV } from "../../config/env";
+import { HttpError, requestWithStatus } from "../http/client";
 import type {
   CreateRecipeInput,
   QueryRecipesParams,
@@ -71,78 +72,35 @@ async function request<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<{ data: T; status: number }> {
-  let response: Response;
   try {
-    const getAuthToken = (): string | undefined => {
-      try {
-        const raw = localStorage.getItem('fmat_restaurant_auth_session');
-        if (!raw) return undefined;
-        const parsed = JSON.parse(raw);
-        return parsed?.accessToken || parsed?.token;
-      } catch {
-        return undefined;
+    return await requestWithStatus<T>(path, options);
+  } catch (error) {
+    if (error instanceof HttpError) {
+      if (error.status === 404) {
+        throw new Error(
+          error.detail ||
+            "La receta o uno de sus insumos no fue encontrado (404).",
+        );
       }
-    };
-    const token = getAuthToken();
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-      ...(options.headers as Record<string, string> ?? {}),
-    };
-    if (token) {
-      headers.Authorization = `Bearer ${token}`;
+      if (error.status === 400) {
+        throw new Error(
+          error.detail ||
+            "Los datos de la receta son inválidos o incompletos (400).",
+        );
+      }
+      if (error.status === 409) {
+        throw new Error(
+          error.detail ||
+            "Conflicto: El identificador plateId ya existe (409).",
+        );
+      }
+      throw error;
     }
-    response = await fetch(`${ENV.API_URL}${path}`, {
-      ...options,
-      headers,
-    });
-  } catch {
+
     throw new Error(
       `No se pudo conectar con el servidor backend en ${ENV.API_URL}. Verifica que el servicio esté en ejecución.`,
     );
   }
-
-  if (!response.ok) {
-    let detail = "";
-    try {
-      const body = await response.json();
-      detail = Array.isArray(body?.message)
-        ? body.message.join(", ")
-        : body?.message || body?.error || "";
-    } catch {
-      detail = "";
-    }
-
-    if (response.status === 404) {
-      throw new Error(
-        detail || "La receta o uno de sus insumos no fue encontrado (404).",
-      );
-    }
-    if (response.status === 400) {
-      throw new Error(
-        detail || "Los datos de la receta son inválidos o incompletos (400).",
-      );
-    }
-    if (response.status === 409) {
-      throw new Error(
-        detail || "Conflicto: El identificador plateId ya existe (409).",
-      );
-    }
-
-    throw new Error(
-      detail || `Error ${response.status} al realizar petición a ${path}`,
-    );
-  }
-
-  if (response.status === 204) {
-    return { data: undefined as T, status: response.status };
-  }
-
-  const raw = await response.text();
-  if (!raw) {
-    return { data: undefined as T, status: response.status };
-  }
-
-  return { data: JSON.parse(raw) as T, status: response.status };
 }
 
 export const httpRecipesRepository: RecipesRepository = {

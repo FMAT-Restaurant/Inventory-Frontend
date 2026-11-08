@@ -22,7 +22,7 @@ jobs:
       MONGO_INITDB_ROOT_USERNAME: inventory
       MONGO_INITDB_ROOT_PASSWORD: inventory_dev
       MONGO_INITDB_DATABASE: inventory
-      FRONTEND_URL: http://localhost:5173
+      FRONTEND_URL: http://localhost:5176
       NODE_ENV: qa
       PORT: 8083
       APP_HOST_PORT: 8083
