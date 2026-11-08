@@ -13,15 +13,9 @@
  *
  * El backend responde errores con la forma:
  *   { statusCode: number, message: string | string[], error: string }
- *
- * Deuda técnica conocida:
- *   La función `request()` está duplicada respecto a
- *   `services/items/httpItemsRepository.ts`. Está previsto
- *   extraerla a `services/http/request.ts` en un PR posterior, coordinado
- *   con el dueño del dominio `items`. Ver `README.md` del módulo.
  */
 
-import { ENV } from '../../config/env';
+import { request } from '../http/client';
 import type {
   Supplier,
   SupplierInput,
@@ -47,48 +41,6 @@ function normalizeSupplier(raw: RawSupplier): Supplier {
     id: String(_id),
     ...rest,
   };
-}
-
-/**
- * Helper HTTP genérico. Duplicado respecto a
- * `services/items/httpItemsRepository.ts`; ver deuda técnica
- * documentada arriba.
- */
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const response = await fetch(`${ENV.API_URL}${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers ?? {}),
-    },
-  });
-
-  if (!response.ok) {
-    let detail = '';
-    try {
-      const body = (await response.json()) as {
-        message?: string | string[];
-        error?: string;
-      };
-      const message = body?.message;
-      if (Array.isArray(message)) {
-        detail = message.join('; ');
-      } else if (typeof message === 'string') {
-        detail = message;
-      } else if (typeof body?.error === 'string') {
-        detail = body.error;
-      }
-    } catch {
-      detail = '';
-    }
-    throw new Error(detail || `Error ${response.status} al consumir ${path}`);
-  }
-
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  return (await response.json()) as T;
 }
 
 export const httpSuppliersRepository: SuppliersRepository = {

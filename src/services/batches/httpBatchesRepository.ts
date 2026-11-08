@@ -10,7 +10,7 @@
  *   DELETE /batches/:id               -> 200 / 204
  */
 
-import { ENV } from "../../config/env";
+import { request } from "../http/client";
 import type {
   Batch,
   BatchesRepository,
@@ -56,40 +56,6 @@ function normalizeBatch(raw: RawBatch): Batch {
     entryDate: formatDateOnly(raw.entryDate ?? raw.createdAt),
     status: raw.status ?? "active",
   };
-}
-
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const response = await fetch(`${ENV.API_URL}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers ?? {}),
-    },
-  });
-
-  if (!response.ok) {
-    let detail = "";
-    try {
-      const body = await response.json();
-      detail = Array.isArray(body?.message)
-        ? body.message.join(", ")
-        : body?.message || body?.error || "";
-    } catch {
-      detail = "";
-    }
-    throw new Error(detail || `Error ${response.status} al consumir ${path}`);
-  }
-
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  const raw = await response.text();
-  if (!raw) {
-    return undefined as T;
-  }
-
-  return JSON.parse(raw) as T;
 }
 
 export const httpBatchesRepository: BatchesRepository = {

@@ -14,40 +14,8 @@
  * supplierIdSugested.
  */
 
-import { ENV } from "../../config/env";
+import { request } from "../http/client";
 import type { Item, ItemInput, ItemsRepository, Supplier } from "./types";
-
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const response = await fetch(`${ENV.API_URL}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers ?? {}),
-    },
-  });
-
-  if (!response.ok) {
-    let detail = "";
-    try {
-      const body = await response.json();
-      detail = body?.message || body?.error || "";
-    } catch {
-      detail = "";
-    }
-    throw new Error(detail || `Error ${response.status} al consumir ${path}`);
-  }
-
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  const raw = await response.text();
-  if (!raw) {
-    return undefined as T;
-  }
-
-  return JSON.parse(raw) as T;
-}
 
 /**
  * Construye el payload del backend a partir del formulario de la UI.
