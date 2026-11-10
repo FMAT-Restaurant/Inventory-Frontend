@@ -1,4 +1,12 @@
-import { useState } from "react";
+import type { ReactNode } from "react";
+import {
+  HashRouter,
+  Navigate,
+  Route,
+  Routes,
+  useInRouterContext,
+  useNavigate,
+} from "react-router-dom";
 import { AUTH_STORAGE_KEY, getStoredSession } from "./services/http/client";
 import { InventoryProvider } from "./context/InventoryContext.jsx";
 import { Shell } from "./components/layout/Shell.jsx";
@@ -39,6 +47,75 @@ export const hasPermission = (
 type ModuleTab =
   "items" | "batches" | "proveedores" | "recetas" | "movimientos";
 
+interface ModuleRoute {
+  /** Segmento de la URL, relativo a la ruta base del módulo. */
+  path: string;
+  title: string;
+  element: ReactNode;
+}
+
+/**
+ * Secciones del módulo. La clave es el identificador que usa el menú
+ * principal; `path` es la ruta que queda en la barra de direcciones.
+ */
+const MODULE_ROUTES: Record<ModuleTab, ModuleRoute> = {
+  items: {
+    path: "insumos",
+    title: "Catálogo de Insumos",
+    element: <ItemsPage />,
+  },
+  batches: {
+    path: "lotes",
+    title: "Gestión de Lotes",
+    element: <BatchesPage />,
+  },
+  proveedores: {
+    path: "proveedores",
+    title: "Catálogo de Proveedores",
+    element: <SuppliersPage />,
+  },
+  recetas: {
+    path: "recetas",
+    title: "Catálogo de Recetas y Disponibilidad",
+    element: <RecetasPage />,
+  },
+  movimientos: {
+    path: "movimientos",
+    title: "Movimientos de Almacén",
+    element: <MovimientosPage />,
+  },
+};
+
+function MenuRoute() {
+  const navigate = useNavigate();
+
+  return (
+    <Shell onBackToMenu={undefined} pageTitle="Inventario">
+      <MainMenu
+        onSelectModule={(tab: ModuleTab) => navigate(MODULE_ROUTES[tab].path)}
+      />
+    </Shell>
+  );
+}
+
+function SectionRoute({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
+  const navigate = useNavigate();
+
+  return (
+    // ".." relativo a la ruta: regresa a la base del módulo, tanto en modo
+    // independiente como montado dentro del router del Shell anfitrión.
+    <Shell onBackToMenu={() => navigate("..")} pageTitle={title}>
+      {children}
+    </Shell>
+  );
+}
+
 function MainApp({ token, currentUser }: FederatedModuleProps) {
   const stored = getStoredSession();
   const activeToken = token ?? stored?.accessToken;
@@ -55,61 +132,42 @@ function MainApp({ token, currentUser }: FederatedModuleProps) {
     }
   }
 
-  const [activeTab, setActiveTab] = useState<"menu" | ModuleTab>("menu");
-
-  const pageTitles: Record<string, string> = {
-    menu: "Inventario",
-    items: "Catálogo de Insumos",
-    batches: "Gestión de Lotes",
-    proveedores: "Catálogo de Proveedores",
-    recetas: "Catálogo de Recetas y Disponibilidad",
-    movimientos: "Movimientos de Almacén",
-  };
-
-  const renderContent = () => {
-    switch (activeTab) {
-      case "menu":
-        return (
-          <MainMenu onSelectModule={(tab: ModuleTab) => setActiveTab(tab)} />
-        );
-      case "items":
-        return <ItemsPage />;
-      case "batches":
-        return <BatchesPage />;
-      case "recetas":
-        return <RecetasPage />;
-      case "movimientos":
-        return <MovimientosPage />;
-      case "proveedores":
-        return <SuppliersPage />;
-      default:
-        return null;
-    }
-  };
-
-  // If mounted from Shell as federated module, render without duplicating Shell chrome
-  /*
-  if (token !== undefined || currentUser !== undefined) {
-    return <div>{renderContent()}</div>;
-  }
-  */
-
   return (
-    <Shell
-      onBackToMenu={
-        activeTab !== "menu" ? () => setActiveTab("menu") : undefined
-      }
-      pageTitle={pageTitles[activeTab] || "Inventario"}
-    >
-      {renderContent()}
-    </Shell>
+    <Routes>
+      <Route index element={<MenuRoute />} />
+      {Object.values(MODULE_ROUTES).map(({ path, title, element }) => (
+        <Route
+          key={path}
+          path={path}
+          element={<SectionRoute title={title}>{element}</SectionRoute>}
+        />
+      ))}
+      {/* Cualquier ruta desconocida regresa al menú del módulo */}
+      <Route path="*" element={<Navigate to=".." replace />} />
+    </Routes>
+  );
+}
+
+/**
+ * Como módulo federado, el Shell anfitrión ya aporta su router y las rutas
+ * del módulo cuelgan de él. En modo independiente se usa HashRouter para que
+ * recargar o abrir un enlace directo funcione en cualquier hosting estático.
+ */
+function ModuleRouter({ children }: { children: ReactNode }) {
+  const insideHostRouter = useInRouterContext();
+  return insideHostRouter ? (
+    <>{children}</>
+  ) : (
+    <HashRouter>{children}</HashRouter>
   );
 }
 
 export default function App(props: FederatedModuleProps = {}) {
   return (
     <InventoryProvider>
-      <MainApp {...props} />
+      <ModuleRouter>
+        <MainApp {...props} />
+      </ModuleRouter>
     </InventoryProvider>
   );
 }

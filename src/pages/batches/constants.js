@@ -1,13 +1,10 @@
 export const FILTER_STATUS_OPTIONS = ["TODOS", "OPTIMO", "BAJO", "CRITICO"];
 
-export const emptyBatchForm = (
-  suppliers = [],
-  items = [],
-  preselectedItemId = "",
-) => ({
+export const emptyBatchForm = (items = [], preselectedItemId = "") => ({
   id: "",
   batchNumber: "",
-  supplierId: suppliers[0]?.id || "",
+  // Sin proveedor por defecto: asignarlo es una decisión explícita.
+  supplierId: "",
   itemId: preselectedItemId || items[0]?.id || "",
   quantity: "",
   cost: "",
@@ -15,10 +12,11 @@ export const emptyBatchForm = (
   lockItem: Boolean(preselectedItemId),
 });
 
-export const formFromBatch = (batch, suppliers = []) => ({
+export const formFromBatch = (batch) => ({
   id: batch.id,
   batchNumber: batch.batchNumber || "",
-  supplierId: batch.supplierId || suppliers[0]?.id || "",
+  // Se muestra el proveedor del lote, nunca otro en su lugar.
+  supplierId: batch.supplierId || "",
   itemId: batch.itemId,
   quantity: String(batch.quantity ?? ""),
   cost: String(batch.cost ?? ""),

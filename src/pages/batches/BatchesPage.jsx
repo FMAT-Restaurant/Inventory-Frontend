@@ -12,6 +12,7 @@ export function BatchesPage({ preselectedItemId }) {
     items,
     batchesByItemId,
     suppliers,
+    allSuppliers,
     filteredItems,
     filters,
     updateFilters,
@@ -40,27 +41,27 @@ export function BatchesPage({ preselectedItemId }) {
   // Botón general "Registrar compra": permite elegir cualquier insumo
   const openCreateGeneral = () => {
     clearMessage();
-    setForm(emptyBatchForm(suppliers, items, preselectedItemId || ""));
+    setForm(emptyBatchForm(items, preselectedItemId || ""));
     setModalOpen(true);
   };
 
   // Botón "+ Comprar" de un insumo específico: bloquea ese insumo
   const openCreateForItem = (itemId) => {
     clearMessage();
-    setForm(emptyBatchForm(suppliers, items, itemId));
+    setForm(emptyBatchForm(items, itemId));
     setModalOpen(true);
   };
 
   const openEditBatch = (batch) => {
     clearMessage();
-    setForm(formFromBatch(batch, suppliers));
+    setForm(formFromBatch(batch));
     setModalOpen(true);
   };
 
   const closeModal = () => {
     if (saving) return;
     setModalOpen(false);
-    setForm(emptyBatchForm(suppliers, items));
+    setForm(emptyBatchForm(items));
     clearMessage();
   };
 
@@ -96,7 +97,7 @@ export function BatchesPage({ preselectedItemId }) {
         }
       }
       setModalOpen(false);
-      setForm(emptyBatchForm(suppliers, items));
+      setForm(emptyBatchForm(items));
     } catch {
       // El hook expone el error para mostrarlo en el modal.
     }
@@ -182,6 +183,7 @@ export function BatchesPage({ preselectedItemId }) {
         values={form}
         items={items}
         suppliers={suppliers}
+        allSuppliers={allSuppliers}
         error={error || ""}
         saving={saving}
         onChange={handleFieldChange}

@@ -9,6 +9,8 @@ export interface Supplier {
   name: string;
   contactName?: string;
   phone?: string;
+  /** `false` cuando el proveedor fue dado de baja (baja lógica). */
+  isActive?: boolean;
 }
 
 export interface Item {
@@ -54,6 +56,7 @@ export interface ItemsRepository {
   create(input: ItemInput): Promise<Item>;
   update(id: string, input: ItemInput): Promise<Item>;
   remove(id: string): Promise<void>;
+  /** Incluye los proveedores dados de baja (`isActive: false`). */
   listSuppliers(): Promise<Supplier[]>;
   subscribe?(listener: () => void): () => void;
 }

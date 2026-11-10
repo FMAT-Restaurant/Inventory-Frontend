@@ -8,6 +8,7 @@ import {
   estadoDe,
   estadoLabel,
 } from "../constants.js";
+import { supplierLabel } from "../../../services/suppliers/labels";
 
 export function ItemCard({
   item,
@@ -115,6 +116,7 @@ export function ItemCard({
                 padding: "2px 8px",
                 borderRadius: "4px",
                 color: "var(--color-muted)",
+                overflowWrap: "anywhere",
               }}
             >
               {item.category || "General"}
@@ -187,7 +189,7 @@ export function ItemCard({
           >
             Proveedor sugerido:{" "}
             <strong style={{ color: "var(--color-text)" }}>
-              {supplier?.name || "Sin asignar"}
+              {supplier ? supplierLabel(supplier) : "Sin asignar"}
             </strong>
           </div>
 

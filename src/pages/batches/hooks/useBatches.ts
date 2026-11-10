@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { itemsRepository } from "../../../services/items";
+import { isActiveSupplier } from "../../../services/suppliers/labels";
 import type { Item, Supplier } from "../../../services/items";
 import { batchesRepository } from "../../../services/batches";
 import type {
@@ -68,7 +69,8 @@ function errorMessage(err: unknown, fallback: string): string {
 export function useBatches() {
   const [items, setItems] = useState<Item[]>([]);
   const [batches, setBatches] = useState<Batch[]>([]);
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  // Todos los proveedores, incluidos los dados de baja.
+  const [allSuppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -223,11 +225,18 @@ export function useBatches() {
     return map;
   }, [batches]);
 
+  // Solo los activos pueden asignarse a un lote o insumo nuevo.
+  const suppliers = useMemo(
+    () => allSuppliers.filter(isActiveSupplier),
+    [allSuppliers],
+  );
+
   return {
     items,
     batches,
     batchesByItemId,
     suppliers,
+    allSuppliers,
     filteredItems,
     filters,
     updateFilters,

@@ -9,6 +9,10 @@ import {
   itemStatusVariant,
 } from "../constants.js";
 
+const isUsableBatch = (lote) =>
+  (lote.status === "active" || lote.status === "expires_today") &&
+  lote.quantity > 0;
+
 export function BatchItemCard({
   item,
   batches,
@@ -19,6 +23,10 @@ export function BatchItemCard({
   onDeleteBatch,
   disabled = false,
 }) {
+  // El lote de uso prioritario es el primero utilizable por fecha de
+  // vencimiento; los caducados o agotados que lo preceden no cuentan.
+  const priorityBatchId = batches.find(isUsableBatch)?.id;
+
   return (
     <Card padding="20px">
       <div
@@ -30,9 +38,18 @@ export function BatchItemCard({
           gap: "16px",
         }}
       >
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <h3 style={{ fontSize: "var(--h3-size)" }}>{item.name}</h3>
+        <div style={{ minWidth: 0 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: "10px",
+            }}
+          >
+            <h3 style={{ fontSize: "var(--h3-size)", overflowWrap: "anywhere" }}>
+              {item.name}
+            </h3>
             <span
               style={{
                 fontSize: "var(--caption-size)",
@@ -40,6 +57,7 @@ export function BatchItemCard({
                 padding: "2px 8px",
                 borderRadius: "4px",
                 color: "var(--color-muted)",
+                overflowWrap: "anywhere",
               }}
             >
               {item.category}
@@ -153,12 +171,8 @@ export function BatchItemCard({
             <div
               style={{ display: "flex", flexDirection: "column", gap: "8px" }}
             >
-              {batches.map((lote, index) => {
-                const esPrioridad =
-                  index === 0 &&
-                  (lote.status === "active" ||
-                    lote.status === "expires_today") &&
-                  lote.quantity > 0;
+              {batches.map((lote) => {
+                const esPrioridad = lote.id === priorityBatchId;
 
                 return (
                   <div
