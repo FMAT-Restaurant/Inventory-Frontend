@@ -1,12 +1,14 @@
 import { Button } from "../../../components/ui/Button.jsx";
 import { Input, Select } from "../../../components/ui/Input.jsx";
 import { Modal } from "../../../components/ui/Modal.jsx";
+import { assignedInactiveOption } from "../../../services/suppliers/labels";
 
 export function BatchFormModal({
   isOpen,
   values,
   items,
   suppliers,
+  allSuppliers = suppliers,
   error = "",
   saving = false,
   onChange,
@@ -14,6 +16,9 @@ export function BatchFormModal({
   onSubmit,
 }) {
   const isEditing = Boolean(values.id);
+  // El proveedor que ya tiene el lote se sigue mostrando aunque esté dado de
+  // baja; no se sustituye por otro.
+  const inactiveOption = assignedInactiveOption(values.supplierId, allSuppliers);
   const selectedItem = items.find((item) => item.id === values.itemId);
 
   return (
@@ -33,6 +38,9 @@ export function BatchFormModal({
           disabled={isEditing}
         >
           <option value="">Sin proveedor específico</option>
+          {inactiveOption && (
+            <option value={inactiveOption.id}>{inactiveOption.label}</option>
+          )}
           {suppliers.map((prov) => (
             <option key={prov.id} value={prov.id}>
               {prov.name}

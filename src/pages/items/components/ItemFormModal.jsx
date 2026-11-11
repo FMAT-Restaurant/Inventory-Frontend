@@ -2,11 +2,13 @@ import { Button } from "../../../components/ui/Button.jsx";
 import { Input, Select } from "../../../components/ui/Input.jsx";
 import { Modal } from "../../../components/ui/Modal.jsx";
 import { CONDICIONES_ALMACENAMIENTO, UNIDADES } from "../constants.js";
+import { assignedInactiveOption } from "../../../services/suppliers/labels";
 
 export function ItemFormModal({
   isOpen,
   values,
   suppliers,
+  allSuppliers = suppliers,
   error = "",
   saving = false,
   onChange,
@@ -14,6 +16,12 @@ export function ItemFormModal({
   onSubmit,
 }) {
   const isEditing = Boolean(values.id);
+  // El proveedor que ya tiene el insumo se sigue mostrando aunque esté dado
+  // de baja; no se sustituye por otro.
+  const inactiveOption = assignedInactiveOption(
+    values.supplierIdSugested,
+    allSuppliers,
+  );
 
   return (
     <Modal
@@ -136,6 +144,9 @@ export function ItemFormModal({
             onChange={(e) => onChange("supplierIdSugested", e.target.value)}
           >
             <option value="">Sin asignar</option>
+            {inactiveOption && (
+              <option value={inactiveOption.id}>{inactiveOption.label}</option>
+            )}
             {suppliers.map((prov) => (
               <option key={prov.id} value={prov.id}>
                 {prov.name}

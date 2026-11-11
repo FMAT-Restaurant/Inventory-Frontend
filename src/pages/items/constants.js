@@ -9,7 +9,7 @@ export const CONDICIONES_ALMACENAMIENTO = [
   "Seco",
 ];
 
-export const emptyForm = (suppliers = []) => ({
+export const emptyForm = () => ({
   id: "",
   sku: "",
   name: "",
@@ -19,10 +19,11 @@ export const emptyForm = (suppliers = []) => ({
   minStock: "",
   isPerishable: false,
   storageCondition: CONDICIONES_ALMACENAMIENTO[0],
-  supplierIdSugested: suppliers[0]?.id || "",
+  // Sin proveedor por defecto: asignarlo es una decisión explícita.
+  supplierIdSugested: "",
 });
 
-export const formFromItem = (item, suppliers = []) => ({
+export const formFromItem = (item) => ({
   id: item.id,
   sku: item.sku || "",
   name: item.name,
@@ -32,7 +33,8 @@ export const formFromItem = (item, suppliers = []) => ({
   minStock: String(item.minStock),
   isPerishable: Boolean(item.isPerishable),
   storageCondition: item.storageCondition || CONDICIONES_ALMACENAMIENTO[0],
-  supplierIdSugested: item.supplierIdSugested || suppliers[0]?.id || "",
+  // Se conserva el proveedor del insumo aunque esté dado de baja.
+  supplierIdSugested: item.supplierIdSugested || "",
 });
 
 export const badgeVariant = (estado) =>

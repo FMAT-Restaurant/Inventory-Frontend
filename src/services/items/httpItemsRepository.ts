@@ -7,7 +7,7 @@
  *   POST   /items          (CreateItemDto) -> Item
  *   PATCH  /items/:id      (Partial<CreateItemDto>) -> Item
  *   DELETE /items/:id      -> Item desactivado
- *   GET    /suppliers      -> Proveedor[]
+ *   GET    /suppliers?includeInactive=true -> Proveedor[] (activos y dados de baja)
  *
  * Campos exigidos por el backend: sku, name, category, unit, minStock y
  * storageCondition. Opcionales: description, isPerishable, averageCost y
@@ -94,7 +94,15 @@ export const httpItemsRepository: ItemsRepository = {
     await request<void>(`/items/${id}`, { method: "DELETE" });
   },
 
-  listSuppliers() {
-    return request<Supplier[]>("/suppliers");
+  async listSuppliers() {
+    // Se piden también los dados de baja para poder mostrar el nombre de
+    // los que siguen asignados a lotes o insumos.
+    const suppliers = await request<(Supplier & { _id?: string })[]>(
+      "/suppliers?includeInactive=true",
+    );
+    return suppliers.map((supplier) => ({
+      ...supplier,
+      id: supplier.id || supplier._id || "",
+    }));
   },
 };

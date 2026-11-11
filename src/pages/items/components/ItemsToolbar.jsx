@@ -57,7 +57,16 @@ export function ItemsToolbar({
         />
       </div>
 
-      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+      <div
+        style={{
+          display: 'flex',
+          gap: '8px',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          minWidth: 0,
+          maxWidth: '100%'
+        }}
+      >
         <span style={{ fontSize: 'var(--caption-size)', color: 'var(--color-muted)', fontWeight: 600 }}>
           Categoría:
         </span>
@@ -73,7 +82,11 @@ export function ItemsToolbar({
             fontSize: 'var(--caption-size)',
             color: 'var(--color-text)',
             fontFamily: 'inherit',
-            cursor: 'pointer'
+            cursor: 'pointer',
+            // Una categoría con nombre largo no debe ensanchar la página.
+            minWidth: 0,
+            maxWidth: 'min(240px, 100%)',
+            textOverflow: 'ellipsis'
           }}
         >
           {categories.map(cat => (

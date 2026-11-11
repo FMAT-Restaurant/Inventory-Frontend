@@ -10,6 +10,7 @@ import { formFromItem, emptyForm } from "./constants.js";
 export function ItemsPage() {
   const {
     suppliers,
+    allSuppliers,
     categories,
     filteredItems,
     filters,
@@ -35,9 +36,10 @@ export function ItemsPage() {
     }));
   };
 
+  // Incluye los dados de baja: un insumo conserva su proveedor sugerido.
   const suppliersById = useMemo(
-    () => new Map(suppliers.map((supplier) => [supplier.id, supplier])),
-    [suppliers],
+    () => new Map(allSuppliers.map((supplier) => [supplier.id, supplier])),
+    [allSuppliers],
   );
 
   /**
@@ -57,20 +59,20 @@ export function ItemsPage() {
 
   const openCreate = () => {
     clearMessage();
-    setForm(emptyForm(suppliers));
+    setForm(emptyForm());
     setModalOpen(true);
   };
 
   const openEdit = (item) => {
     clearMessage();
-    setForm(formFromItem(item, suppliers));
+    setForm(formFromItem(item));
     setModalOpen(true);
   };
 
   const closeModal = () => {
     if (saving) return;
     setModalOpen(false);
-    setForm(emptyForm(suppliers));
+    setForm(emptyForm());
     clearMessage();
   };
 
@@ -94,7 +96,7 @@ export function ItemsPage() {
         supplierIdSugested: form.supplierIdSugested || null,
       });
       setModalOpen(false);
-      setForm(emptyForm(suppliers));
+      setForm(emptyForm());
     } catch {
       // El hook expone el error para mostrarlo en el modal.
     }
@@ -187,6 +189,7 @@ export function ItemsPage() {
         isOpen={modalOpen}
         values={form}
         suppliers={suppliers}
+        allSuppliers={allSuppliers}
         error={error || ""}
         saving={saving}
         onChange={handleFieldChange}
