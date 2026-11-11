@@ -1,11 +1,15 @@
 import { Card } from '../../components/ui/Card.jsx';
 import { Button } from '../../components/ui/Button.jsx';
 import { BoxIcon, BookOpenIcon, ClipboardListIcon, ArrowRightIcon, PackageIcon, TruckIcon } from '../../components/ui/Icons.jsx';
+import { useAuth } from '../../context/AuthContext';
+import { MODULE_READ_PERMISSION } from '../../config/permissions';
 /**
  * Menú Inicial según FMAT-RESTAURANT v2.0
  * Vista estandarizada con tarjetas grandes para Insumos, Recetas y Movimientos.
+ * Las tarjetas se ocultan si el usuario no tiene el permiso de lectura del módulo.
  */
 export function MainMenu({ onSelectModule }) {
+  const { can } = useAuth();
   const modules = [
     {
       id: 'items',
@@ -32,7 +36,7 @@ export function MainMenu({ onSelectModule }) {
       title: 'Movimientos de Almacén',
       icon: ClipboardListIcon
     }
-  ];
+  ].filter(mod => can(MODULE_READ_PERMISSION[mod.id]));
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -43,6 +47,23 @@ export function MainMenu({ onSelectModule }) {
       </div>
 
       {/* Grid estándar idéntico al resto de las páginas */}
+      {modules.length === 0 ? (
+        <Card padding="32px">
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '12px',
+              color: 'var(--color-muted)'
+            }}
+          >
+            <p style={{ fontSize: 'var(--small-size)' }}>
+              No tienes permisos para acceder a ningún módulo de inventario.
+            </p>
+          </div>
+        </Card>
+      ) : (
       <div className="grid-responsive">
         {modules.map(mod => {
           const Icon = mod.icon;
@@ -107,6 +128,7 @@ export function MainMenu({ onSelectModule }) {
           );
         })}
       </div>
+      )}
     </div>
   );
 }

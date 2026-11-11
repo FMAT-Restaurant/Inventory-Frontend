@@ -7,26 +7,25 @@ import {
   useInRouterContext,
   useNavigate,
 } from "react-router-dom";
-import { AUTH_STORAGE_KEY, getStoredSession } from "./services/http/client";
+import {
+  AuthProvider,
+  hasPermission,
+  useAuth,
+  type ShellUser,
+} from "./context/AuthContext";
 import { InventoryProvider } from "./context/InventoryContext.jsx";
 import { Shell } from "./components/layout/Shell.jsx";
+import { AlertCircleIcon } from "./components/ui/Icons.jsx";
 import { MainMenu } from "./pages/mainMenu/MainMenu.jsx";
 import { ItemsPage } from "./pages/items/ItemsPage.jsx";
 import { BatchesPage } from "./pages/batches/BatchesPage.jsx";
 import { RecetasPage } from "./pages/recipes/RecetasPage.jsx";
 import { MovimientosPage } from "./pages/MovimientosPage.jsx";
 import { SuppliersPage } from "./pages/suppliers/SuppliersPage.jsx";
+import { MODULE_READ_PERMISSION } from "./config/permissions";
 
-export interface ShellUser {
-  id: string;
-  userType: "ADMIN" | "STAFF";
-  staffId?: string;
-  email?: string;
-  displayName: string;
-  roleLabel?: string;
-  roles?: string[];
-  permissions: string[];
-}
+export type { ShellUser };
+export { hasPermission };
 
 export interface FederatedModuleProps {
   token?: string;
@@ -34,18 +33,12 @@ export interface FederatedModuleProps {
   theme?: "light" | "dark";
 }
 
-export const hasPermission = (
-  user: ShellUser | undefined,
-  requiredPermission: string,
-): boolean => {
-  if (!user) return false;
-  if (user.userType === "ADMIN" || user.permissions?.includes("*")) return true;
-  if (!user.permissions) return false;
-  return user.permissions.includes(requiredPermission);
-};
-
 type ModuleTab =
-  "items" | "batches" | "proveedores" | "recetas" | "movimientos";
+  | "items"
+  | "batches"
+  | "proveedores"
+  | "recetas"
+  | "movimientos";
 
 interface ModuleRoute {
   /** Segmento de la URL, relativo a la ruta base del módulo. */
@@ -98,50 +91,94 @@ function MenuRoute() {
   );
 }
 
+function AccessRestricted({ onBackToMenu }: { onBackToMenu: () => void }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: "12px",
+        padding: "32px",
+        backgroundColor: "var(--color-surface)",
+        border: "1px solid var(--color-border)",
+        borderRadius: "var(--radius-card)",
+        boxShadow: "var(--shadow-flat)",
+        color: "var(--color-muted)",
+        textAlign: "center",
+      }}
+    >
+      <AlertCircleIcon size={32} color="var(--color-danger)" />
+      <p style={{ fontSize: "var(--small-size)" }}>
+        No tienes permisos para acceder a esta sección del inventario.
+      </p>
+      <button
+        type="button"
+        onClick={onBackToMenu}
+        style={{
+          fontFamily: "inherit",
+          fontWeight: 600,
+          fontSize: "var(--body-size)",
+          borderRadius: "var(--radius-control)",
+          cursor: "pointer",
+          height: "var(--control-height)",
+          padding: "0 16px",
+          backgroundColor: "transparent",
+          border: "1px solid var(--color-primary)",
+          color: "var(--color-primary)",
+        }}
+      >
+        Volver al menú
+      </button>
+    </div>
+  );
+}
+
 function SectionRoute({
+  tab,
   title,
   children,
 }: {
+  tab: ModuleTab;
   title: string;
   children: ReactNode;
 }) {
   const navigate = useNavigate();
+  const { can } = useAuth();
+  const requiredPermission = MODULE_READ_PERMISSION[tab];
+  const allowed = !requiredPermission || can(requiredPermission);
 
   return (
     // ".." relativo a la ruta: regresa a la base del módulo, tanto en modo
     // independiente como montado dentro del router del Shell anfitrión.
     <Shell onBackToMenu={() => navigate("..")} pageTitle={title}>
-      {children}
+      {allowed ? (
+        children
+      ) : (
+        <AccessRestricted onBackToMenu={() => navigate("..")} />
+      )}
     </Shell>
   );
 }
 
-function MainApp({ token, currentUser }: FederatedModuleProps) {
-  const stored = getStoredSession();
-  const activeToken = token ?? stored?.accessToken;
-  const activeUser = currentUser ?? (stored?.user as ShellUser | undefined);
-
-  if (activeToken) {
-    try {
-      localStorage.setItem(
-        AUTH_STORAGE_KEY,
-        JSON.stringify({ accessToken: activeToken, user: activeUser }),
-      );
-    } catch {
-      // ignore
-    }
-  }
-
+function MainApp() {
   return (
     <Routes>
       <Route index element={<MenuRoute />} />
-      {Object.values(MODULE_ROUTES).map(({ path, title, element }) => (
-        <Route
-          key={path}
-          path={path}
-          element={<SectionRoute title={title}>{element}</SectionRoute>}
-        />
-      ))}
+      {(Object.keys(MODULE_ROUTES) as ModuleTab[]).map((tab) => {
+        const { path, title, element } = MODULE_ROUTES[tab];
+        return (
+          <Route
+            key={path}
+            path={path}
+            element={
+              <SectionRoute tab={tab} title={title}>
+                {element}
+              </SectionRoute>
+            }
+          />
+        );
+      })}
       {/* Cualquier ruta desconocida regresa al menú del módulo */}
       <Route path="*" element={<Navigate to=".." replace />} />
     </Routes>
@@ -165,9 +202,11 @@ function ModuleRouter({ children }: { children: ReactNode }) {
 export default function App(props: FederatedModuleProps = {}) {
   return (
     <InventoryProvider>
-      <ModuleRouter>
-        <MainApp {...props} />
-      </ModuleRouter>
+      <AuthProvider token={props.token} currentUser={props.currentUser}>
+        <ModuleRouter>
+          <MainApp />
+        </ModuleRouter>
+      </AuthProvider>
     </InventoryProvider>
   );
 }

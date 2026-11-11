@@ -5,6 +5,7 @@ export function RecipesEmptyState({
   hasSearchOrFilter,
   onResetFilters,
   onNewRecipe,
+  canWrite = true,
 }) {
   return (
     <div
@@ -67,10 +68,12 @@ export function RecipesEmptyState({
             Limpiar filtros
           </Button>
         ) : (
-          <Button variant="primary" size="md" onClick={onNewRecipe}>
-            <PlusIcon size={16} />
-            <span>Crear primera receta</span>
-          </Button>
+          canWrite && (
+            <Button variant="primary" size="md" onClick={onNewRecipe}>
+              <PlusIcon size={16} />
+              <span>Crear primera receta</span>
+            </Button>
+          )
         )}
       </div>
     </div>

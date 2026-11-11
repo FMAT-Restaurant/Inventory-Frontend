@@ -1,5 +1,7 @@
 import { Button } from '../../../components/ui/Button.jsx';
 import { SearchIcon, PlusIcon } from '../../../components/ui/Icons.jsx';
+import { useAuth } from '../../../context/AuthContext';
+import { PERMISSIONS } from '../../../config/permissions';
 
 export function ItemsToolbar({
   search,
@@ -10,6 +12,8 @@ export function ItemsToolbar({
   onNew,
   disabled = false
 }) {
+  const { can } = useAuth();
+  const canWrite = can(PERMISSIONS.ITEMS_WRITE);
   return (
     <div
       style={{
@@ -95,10 +99,12 @@ export function ItemsToolbar({
             </option>
           ))}
         </select>
-        <Button variant="primary" size="md" onClick={onNew} disabled={disabled}>
-          <PlusIcon size={16} />
-          <span>Nuevo insumo</span>
-        </Button>
+        {canWrite && (
+          <Button variant="primary" size="md" onClick={onNew} disabled={disabled}>
+            <PlusIcon size={16} />
+            <span>Nuevo insumo</span>
+          </Button>
+        )}
       </div>
     </div>
   );

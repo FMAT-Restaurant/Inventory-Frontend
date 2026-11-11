@@ -2,6 +2,8 @@ import { Card } from "../../../components/ui/Card.jsx";
 import { Badge } from "../../../components/ui/Badge.jsx";
 import { Button } from "../../../components/ui/Button.jsx";
 import { ChevronDownIcon } from "../../../components/ui/Icons.jsx";
+import { useAuth } from "../../../context/AuthContext";
+import { PERMISSIONS } from "../../../config/permissions";
 import {
   badgeVariant,
   estadoColores,
@@ -19,6 +21,8 @@ export function ItemCard({
   onDelete,
   disabled = false,
 }) {
+  const { can } = useAuth();
+  const canWrite = can(PERMISSIONS.ITEMS_WRITE);
   const estado = estadoDe(item);
   const colores = estadoColores(estado);
 
@@ -212,24 +216,26 @@ export function ItemCard({
         </div>
       )}
 
-      <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
-        <Button
-          variant="tertiary"
-          size="sm"
-          onClick={onDelete}
-          disabled={disabled}
-        >
-          Eliminar
-        </Button>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={onEdit}
-          disabled={disabled}
-        >
-          Editar
-        </Button>
-      </div>
+      {canWrite && (
+        <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+          <Button
+            variant="tertiary"
+            size="sm"
+            onClick={onDelete}
+            disabled={disabled}
+          >
+            Eliminar
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={onEdit}
+            disabled={disabled}
+          >
+            Editar
+          </Button>
+        </div>
+      )}
     </Card>
   );
 }

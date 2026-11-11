@@ -27,7 +27,7 @@ export function getStoredSession(): StoredSession | null {
 
 export function getAuthToken(): string | undefined {
   const session = getStoredSession();
-  return session?.accessToken || session?.token;
+  return session?.accessToken || session?.token || ENV.AUTH_TOKEN || undefined;
 }
 
 export class HttpError extends Error {
@@ -68,6 +68,16 @@ async function parseErrorDetail(response: Response): Promise<string> {
   }
 }
 
+function friendlyErrorMessage(status: number, path: string): string {
+  if (status === 401) {
+    return "Tu sesión ha expirado o no es válida. Inicia sesión nuevamente.";
+  }
+  if (status === 403) {
+    return "No tienes permisos para realizar esta operación.";
+  }
+  return `Error ${status} al consumir ${path}`;
+}
+
 export async function requestWithStatus<T>(
   path: string,
   options: RequestInit = {},
@@ -81,7 +91,7 @@ export async function requestWithStatus<T>(
     const detail = await parseErrorDetail(response);
     throw new HttpError(
       response.status,
-      detail || `Error ${response.status} al consumir ${path}`,
+      detail || friendlyErrorMessage(response.status, path),
     );
   }
 

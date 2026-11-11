@@ -8,6 +8,7 @@ export function RecipeCard({
   onViewDetail,
   onEdit,
   onDelete,
+  canWrite = true,
 }) {
   const missingItems = (recipe.items || []).filter(
     (item) => !item.hasSufficientStock,
@@ -183,23 +184,25 @@ export function RecipeCard({
           Ver receta
         </Button>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-          <Button
-            variant="tertiary"
-            size="sm"
-            onClick={() => onEdit(recipe)}
-          >
-            Editar
-          </Button>
+        {canWrite && (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+            <Button
+              variant="tertiary"
+              size="sm"
+              onClick={() => onEdit(recipe)}
+            >
+              Editar
+            </Button>
 
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => onDelete(recipe)}
-          >
-            Eliminar
-          </Button>
-        </div>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => onDelete(recipe)}
+            >
+              Eliminar
+            </Button>
+          </div>
+        )}
       </div>
     </Card>
   );
