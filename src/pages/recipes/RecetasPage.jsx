@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useRecipes } from "./hooks/useRecipes";
+import { ENV } from "../../config/env";
 import { RecipesToolbar } from "./components/RecipesToolbar.jsx";
 import { RecipeCard } from "./components/RecipeCard.jsx";
 import { RecipeDetailModal } from "./components/RecipeDetailModal.jsx";
@@ -59,6 +60,11 @@ export function RecetasPage() {
 
   const hasSearchOrFilter =
     Boolean(filters.search.trim()) || filters.availability !== "ALL";
+
+  // No existe permiso de escritura de recetas: el backend las gestiona por
+  // eventos de Menú y rechaza toda escritura (403). Solo el mock permite
+  // crear/editar/eliminar localmente.
+  const canWriteRecipes = ENV.USE_MOCK;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
@@ -141,6 +147,7 @@ export function RecetasPage() {
           updateFilters({ availability })
         }
         onNewRecipe={handleOpenCreate}
+        canWrite={canWriteRecipes}
         loadingItems={loadingItems}
       />
 
@@ -165,6 +172,7 @@ export function RecetasPage() {
             updateFilters({ search: "", availability: "ALL" })
           }
           onNewRecipe={handleOpenCreate}
+          canWrite={canWriteRecipes}
         />
       ) : (
         <div className="grid-responsive">
@@ -175,6 +183,7 @@ export function RecetasPage() {
               onViewDetail={(r) => setRecipeToView(r)}
               onEdit={handleOpenEdit}
               onDelete={(r) => setRecipeToDelete(r)}
+              canWrite={canWriteRecipes}
             />
           ))}
         </div>

@@ -8,6 +8,7 @@ export function RecipesToolbar({
   availability,
   onAvailabilityChange,
   onNewRecipe,
+  canWrite = true,
   loadingItems = false,
 }) {
   const filterOptions = ["ALL", "AVAILABLE", "UNAVAILABLE"];
@@ -104,17 +105,19 @@ export function RecipesToolbar({
           );
         })}
 
-        <Button
-          variant="primary"
-          size="md"
-          onClick={onNewRecipe}
-          disabled={loadingItems}
-        >
-          <PlusIcon size={16} />
-          <span>
-            {loadingItems ? "Cargando insumos..." : "Nueva receta"}
-          </span>
-        </Button>
+        {canWrite && (
+          <Button
+            variant="primary"
+            size="md"
+            onClick={onNewRecipe}
+            disabled={loadingItems}
+          >
+            <PlusIcon size={16} />
+            <span>
+              {loadingItems ? "Cargando insumos..." : "Nueva receta"}
+            </span>
+          </Button>
+        )}
       </div>
     </div>
   );

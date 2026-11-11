@@ -45,9 +45,11 @@ export const ENV: {
   APP_ENV: AppEnv;
   USE_MOCK: boolean;
   API_URL: string;
+  AUTH_TOKEN: string;
 } = {
   MODE: import.meta.env.MODE,
   APP_ENV: resolveAppEnv(),
   USE_MOCK: resolveUseMock(),
-  API_URL: resolveApiUrl()
+  API_URL: resolveApiUrl(),
+  AUTH_TOKEN: (import.meta.env.VITE_AUTH_TOKEN ?? '').trim()
 };

@@ -1,5 +1,7 @@
 import { Button } from '../../../components/ui/Button.jsx';
 import { SearchIcon, PlusIcon } from '../../../components/ui/Icons.jsx';
+import { useAuth } from '../../../context/AuthContext';
+import { PERMISSIONS } from '../../../config/permissions';
 
 export function SuppliersToolbar({
   search,
@@ -7,6 +9,8 @@ export function SuppliersToolbar({
   onNew,
   disabled = false,
 }) {
+  const { can } = useAuth();
+  const canWrite = can(PERMISSIONS.SUPPLIERS_WRITE);
   return (
     <div
       style={{
@@ -54,10 +58,12 @@ export function SuppliersToolbar({
         />
       </div>
 
-      <Button variant="primary" size="md" onClick={onNew} disabled={disabled}>
-        <PlusIcon size={16} />
-        <span>Nuevo proveedor</span>
-      </Button>
+      {canWrite && (
+        <Button variant="primary" size="md" onClick={onNew} disabled={disabled}>
+          <PlusIcon size={16} />
+          <span>Nuevo proveedor</span>
+        </Button>
+      )}
     </div>
   );
 }

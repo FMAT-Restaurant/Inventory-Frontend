@@ -1,5 +1,7 @@
 import { Card } from '../../../components/ui/Card.jsx';
 import { Button } from '../../../components/ui/Button.jsx';
+import { useAuth } from '../../../context/AuthContext';
+import { PERMISSIONS } from '../../../config/permissions';
 
 export function SupplierCard({
   supplier,
@@ -7,6 +9,8 @@ export function SupplierCard({
   onDelete,
   disabled = false,
 }) {
+  const { can } = useAuth();
+  const canWrite = can(PERMISSIONS.SUPPLIERS_WRITE);
   return (
     <Card
       padding="20px"
@@ -58,24 +62,26 @@ export function SupplierCard({
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-        <Button
-          variant="tertiary"
-          size="sm"
-          onClick={onDelete}
-          disabled={disabled}
-        >
-          Eliminar
-        </Button>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={onEdit}
-          disabled={disabled}
-        >
-          Editar
-        </Button>
-      </div>
+      {canWrite && (
+        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+          <Button
+            variant="tertiary"
+            size="sm"
+            onClick={onDelete}
+            disabled={disabled}
+          >
+            Eliminar
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={onEdit}
+            disabled={disabled}
+          >
+            Editar
+          </Button>
+        </div>
+      )}
     </Card>
   );
 }

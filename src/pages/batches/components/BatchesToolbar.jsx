@@ -1,6 +1,8 @@
 import { Button } from "../../../components/ui/Button.jsx";
 import { SearchIcon, PlusIcon } from "../../../components/ui/Icons.jsx";
 import { FILTER_STATUS_OPTIONS } from "../constants.js";
+import { useAuth } from "../../../context/AuthContext";
+import { PERMISSIONS } from "../../../config/permissions";
 
 export function BatchesToolbar({
   search,
@@ -10,6 +12,8 @@ export function BatchesToolbar({
   onNewPurchase,
   disabled = false,
 }) {
+  const { can } = useAuth();
+  const canWrite = can(PERMISSIONS.BATCHES_WRITE);
   return (
     <div
       style={{
@@ -106,15 +110,17 @@ export function BatchesToolbar({
                   : "Agotado"}
           </button>
         ))}
-        <Button
-          variant="primary"
-          size="md"
-          onClick={onNewPurchase}
-          disabled={disabled}
-        >
-          <PlusIcon size={16} />
-          <span>Registrar compra</span>
-        </Button>
+        {canWrite && (
+          <Button
+            variant="primary"
+            size="md"
+            onClick={onNewPurchase}
+            disabled={disabled}
+          >
+            <PlusIcon size={16} />
+            <span>Registrar compra</span>
+          </Button>
+        )}
       </div>
     </div>
   );

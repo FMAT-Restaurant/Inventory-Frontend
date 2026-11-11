@@ -2,6 +2,8 @@ import { Card } from "../../../components/ui/Card.jsx";
 import { Badge } from "../../../components/ui/Badge.jsx";
 import { Button } from "../../../components/ui/Button.jsx";
 import { ChevronDownIcon } from "../../../components/ui/Icons.jsx";
+import { useAuth } from "../../../context/AuthContext";
+import { PERMISSIONS } from "../../../config/permissions";
 import {
   batchStatusLabel,
   batchStatusVariant,
@@ -26,6 +28,9 @@ export function BatchItemCard({
   // El lote de uso prioritario es el primero utilizable por fecha de
   // vencimiento; los caducados o agotados que lo preceden no cuentan.
   const priorityBatchId = batches.find(isUsableBatch)?.id;
+
+  const { can } = useAuth();
+  const canWrite = can(PERMISSIONS.BATCHES_WRITE);
 
   return (
     <Card padding="20px">
@@ -117,14 +122,16 @@ export function BatchItemCard({
               }}
             />
           </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={onNewPurchase}
-            disabled={disabled}
-          >
-            + Comprar
-          </Button>
+          {canWrite && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={onNewPurchase}
+              disabled={disabled}
+            >
+              + Comprar
+            </Button>
+          )}
         </div>
       </div>
 
@@ -246,22 +253,26 @@ export function BatchItemCard({
                           Prioridad de uso
                         </span>
                       )}
-                      <Button
-                        variant="tertiary"
-                        size="sm"
-                        onClick={() => onEditBatch(lote)}
-                        disabled={disabled}
-                      >
-                        Editar
-                      </Button>
-                      <Button
-                        variant="tertiary"
-                        size="sm"
-                        onClick={() => onDeleteBatch(lote)}
-                        disabled={disabled}
-                      >
-                        Eliminar
-                      </Button>
+                      {canWrite && (
+                        <>
+                          <Button
+                            variant="tertiary"
+                            size="sm"
+                            onClick={() => onEditBatch(lote)}
+                            disabled={disabled}
+                          >
+                            Editar
+                          </Button>
+                          <Button
+                            variant="tertiary"
+                            size="sm"
+                            onClick={() => onDeleteBatch(lote)}
+                            disabled={disabled}
+                          >
+                            Eliminar
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </div>
                 );
