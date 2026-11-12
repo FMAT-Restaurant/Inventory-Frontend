@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useSuppliers } from './hooks/useSuppliers.js';
 import { SuppliersToolbar } from './components/SuppliersToolbar.jsx';
 import { SupplierCard } from './components/SupplierCard.jsx';
+import { SupplierCostHistoryModal } from './components/SupplierCostHistoryModal.jsx';
 import { SuppliersEmptyState } from './components/SuppliersEmptyState.jsx';
 import { SupplierFormModal } from './components/SupplierFormModal.jsx';
 import { ConfirmModal } from '../../components/ui/ConfirmModal.jsx';
@@ -24,6 +25,7 @@ export function SuppliersPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState(emptyForm());
   const [supplierToDelete, setSupplierToDelete] = useState(null);
+  const [historySupplier, setHistorySupplier] = useState(null);
 
   const openCreate = () => {
     clearMessage();
@@ -135,6 +137,7 @@ export function SuppliersPage() {
               supplier={supplier}
               onEdit={() => openEdit(supplier)}
               onDelete={() => requestDelete(supplier)}
+              onCostHistory={() => setHistorySupplier(supplier)}
               disabled={saving}
             />
           ))}
@@ -149,6 +152,11 @@ export function SuppliersPage() {
         onChange={handleFieldChange}
         onClose={closeModal}
         onSubmit={submitForm}
+      />
+
+      <SupplierCostHistoryModal
+        supplier={historySupplier}
+        onClose={() => setHistorySupplier(null)}
       />
 
       <ConfirmModal

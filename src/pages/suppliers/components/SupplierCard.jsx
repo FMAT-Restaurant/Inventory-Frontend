@@ -7,6 +7,7 @@ export function SupplierCard({
   supplier,
   onEdit,
   onDelete,
+  onCostHistory,
   disabled = false,
 }) {
   const { can } = useAuth();
@@ -62,8 +63,18 @@ export function SupplierCard({
         </div>
       </div>
 
-      {canWrite && (
-        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+      <div
+        style={{
+          display: 'flex',
+          gap: '8px',
+          justifyContent: 'flex-end',
+          flexWrap: 'wrap',
+        }}
+      >
+        <Button variant="tertiary" size="sm" onClick={onCostHistory}>
+          Historial de costos
+        </Button>
+        {canWrite && (
           <Button
             variant="tertiary"
             size="sm"
@@ -72,6 +83,8 @@ export function SupplierCard({
           >
             Eliminar
           </Button>
+        )}
+        {canWrite && (
           <Button
             variant="secondary"
             size="sm"
@@ -80,8 +93,8 @@ export function SupplierCard({
           >
             Editar
           </Button>
-        </div>
-      )}
+        )}
+      </div>
     </Card>
   );
 }

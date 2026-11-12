@@ -7,6 +7,7 @@
  *   POST   /suppliers          (SupplierInput) -> SupplierRaw  (201) | 400 | 409
  *   PATCH  /suppliers/:id      (SupplierUpdateInput) -> SupplierRaw (200) | 400 | 404
  *   DELETE /suppliers/:id      -> void             (200) | 404
+ *   GET    /suppliers/:id/cost-history -> SupplierCostEntry[] (200) | 404
  *
  * El backend devuelve `_id` (ObjectId de Mongo) y `__v` (versión de Mongoose).
  * Este repositorio NORMALIZA la respuesta: `_id -> id`, descarta `__v`.
@@ -18,6 +19,7 @@
 import { request } from '../http/client';
 import type {
   Supplier,
+  SupplierCostEntry,
   SupplierInput,
   SupplierUpdateInput,
   SuppliersRepository,
@@ -76,5 +78,17 @@ export const httpSuppliersRepository: SuppliersRepository = {
 
   async remove(id: string): Promise<void> {
     await request<void>(`/suppliers/${id}`, { method: 'DELETE' });
+  },
+
+  async costHistory(id: string): Promise<SupplierCostEntry[]> {
+    const raw = await request<SupplierCostEntry[]>(
+      `/suppliers/${encodeURIComponent(id)}/cost-history`,
+    );
+    return (raw ?? []).map((entry) => ({
+      ...entry,
+      quantity: Number(entry.quantity ?? 0),
+      cost: Number(entry.cost ?? 0),
+      purchasedAt: String(entry.purchasedAt ?? ''),
+    }));
   },
 };
