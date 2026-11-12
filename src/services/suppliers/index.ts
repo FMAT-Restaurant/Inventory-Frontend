@@ -24,6 +24,7 @@ export const suppliersRepository: SuppliersRepository = getSuppliersRepository()
 
 export type {
   Supplier,
+  SupplierCostEntry,
   SupplierInput,
   SupplierUpdateInput,
   SuppliersRepository,

@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { useInventory } from '../context/InventoryContext.jsx';
 import { ENV } from '../config/env';
 import { useMovements } from './movements/hooks/useMovements';
+import { WasteFormModal } from './movements/components/WasteFormModal.jsx';
+import { useAuth } from '../context/AuthContext';
+import { PERMISSIONS } from '../config/permissions';
 import { Card } from '../components/ui/Card.jsx';
 import { Badge } from '../components/ui/Badge.jsx';
 import { Button } from '../components/ui/Button.jsx';
@@ -49,6 +52,13 @@ export function MovimientosPage() {
     cargando
   } = useInventory();
 
+  const { can } = useAuth();
+  // Registrar merma requiere ver órdenes servidas y escribir en lotes.
+  const canRegisterWaste =
+    !ENV.USE_MOCK &&
+    can(PERMISSIONS.BATCHES_WRITE) &&
+    can(PERMISSIONS.RESERVATIONS_READ);
+  const [isWasteOpen, setIsWasteOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [tipoSalida, setTipoSalida] = useState('PREPARACION'); // 'PREPARACION' | 'MERMA'
   const [itemSeleccionado, setItemSeleccionado] = useState(platillos[0]?.plateId || '');
@@ -101,6 +111,13 @@ export function MovimientosPage() {
             Registro de entradas, salidas, mermas y ajustes.
           </p>
         </div>
+
+        {canRegisterWaste && (
+          <Button variant="primary" size="md" onClick={() => setIsWasteOpen(true)}>
+            <PlusIcon size={16} />
+            <span>Registrar merma</span>
+          </Button>
+        )}
 
         {ENV.USE_MOCK && (
           <Button variant="primary" size="md" onClick={handleAbrirModal}>
@@ -298,6 +315,11 @@ export function MovimientosPage() {
           </form>
         </Modal>
       )}
+      <WasteFormModal
+        isOpen={isWasteOpen}
+        onClose={() => setIsWasteOpen(false)}
+        onSaved={reload}
+      />
     </div>
   );
 }

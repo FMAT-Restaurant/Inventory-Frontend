@@ -89,10 +89,26 @@ export type SupplierUpdateInput = Partial<SupplierInput>;
  *   - El repo es stateless: no cachea. El caché es responsabilidad del hook
  *     (`useSuppliers`) o del componente que lo consuma.
  */
+/** Compra registrada a un proveedor (un lote), para el historial de costos. */
+export interface SupplierCostEntry {
+  batchId: string;
+  batchNumber: string;
+  itemId: string;
+  itemName: string;
+  unit: string;
+  quantity: number;
+  /** Costo unitario de compra al registrar el lote. */
+  cost: number;
+  /** ISO-8601. */
+  purchasedAt: string;
+}
+
 export interface SuppliersRepository {
   list(): Promise<Supplier[]>;
   getById(id: string): Promise<Supplier | null>;
   create(input: SupplierInput): Promise<Supplier>;
   update(id: string, input: SupplierUpdateInput): Promise<Supplier>;
   remove(id: string): Promise<void>;
+  /** Compras del proveedor en orden cronológico (incluye dados de baja). */
+  costHistory(id: string): Promise<SupplierCostEntry[]>;
 }
