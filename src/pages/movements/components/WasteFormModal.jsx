@@ -6,6 +6,12 @@ import { useWaste } from '../hooks/useWaste';
 
 const EMPTY_FORM = { batchId: '', quantity: '', reason: '' };
 
+function batchPlaceholder(loading, hasBatches) {
+  if (loading) return 'Cargando lotes...';
+  if (!hasBatches) return 'No hay lotes con existencias';
+  return 'Selecciona un lote';
+}
+
 /**
  * Registro de merma: el lote en el que se generó, la cantidad perdida y el
  * motivo. La cantidad se descuenta del lote y queda en el historial.
@@ -57,11 +63,7 @@ export function WasteFormModal({ isOpen, onClose, onSaved }) {
           required
         >
           <option value="">
-            {loading
-              ? 'Cargando lotes...'
-              : batchOptions.length === 0
-                ? 'No hay lotes con existencias'
-                : 'Selecciona un lote'}
+            {batchPlaceholder(loading, batchOptions.length > 0)}
           </option>
           {batchOptions.map((option) => (
             <option key={option.batchId} value={option.batchId}>

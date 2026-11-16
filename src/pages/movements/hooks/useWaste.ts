@@ -30,7 +30,7 @@ export function validateWasteInput(
   if (available !== undefined && quantity > available) {
     return `La cantidad excede lo que queda en el lote (${available}).`;
   }
-  if (!input.reason || !input.reason.trim()) {
+  if (!input.reason?.trim()) {
     return "Indica el motivo de la merma.";
   }
   return null;

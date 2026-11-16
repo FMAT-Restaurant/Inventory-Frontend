@@ -55,9 +55,9 @@ export function Pagination({ page, totalPages, onChange, disabled = false }) {
       </Button>
 
       {items.map((item, index) =>
-        item === '…' ? (
+        typeof item === 'string' ? (
           <span
-            key={`gap-${index}`}
+            key={`gap-after-${items[index - 1]}`}
             aria-hidden="true"
             style={{ padding: '0 4px', color: 'var(--color-muted)' }}
           >

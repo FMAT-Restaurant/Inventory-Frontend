@@ -93,10 +93,11 @@ export const httpSuppliersRepository: SuppliersRepository = {
         params.set(key, String(value));
       }
     }
-    const qs = params.toString();
+    const queryString = params.toString();
+    const suffix = queryString ? `?${queryString}` : '';
 
     const raw = await request<Partial<SupplierCostHistoryPage>>(
-      `/suppliers/${encodeURIComponent(id)}/cost-history${qs ? `?${qs}` : ''}`,
+      `/suppliers/${encodeURIComponent(id)}/cost-history${suffix}`,
     );
 
     const items: SupplierCostEntry[] = (raw?.items ?? []).map((entry) => ({
