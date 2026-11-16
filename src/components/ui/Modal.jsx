@@ -59,6 +59,9 @@ export function Modal({
           display: 'flex',
           flexDirection: 'column',
           gap: '20px',
+          // Un contenido alto hace scroll dentro del modal en vez de cortarse
+          maxHeight: 'calc(100vh - 32px)',
+          overflowY: 'auto',
           animation: 'fadeInScale 0.15s ease-out'
         }}
       >

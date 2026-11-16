@@ -12,7 +12,9 @@ export function Button({
   disabled = false,
   fullWidth = false,
   className = '',
-  style = {}
+  style = {},
+  // aria-*, title, data-*, etc. se pasan tal cual al <button>
+  ...rest
 }) {
   const baseStyles = {
     fontFamily: 'inherit',
@@ -55,6 +57,7 @@ export function Button({
 
   return (
     <button
+      {...rest}
       type={type}
       disabled={disabled}
       onClick={onClick}

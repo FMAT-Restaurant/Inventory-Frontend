@@ -19,7 +19,7 @@ import type {
   SupplierInput,
   SupplierUpdateInput,
   SuppliersRepository,
-  SupplierCostEntry,
+  SupplierCostHistoryPage,
 } from './types';
 
 interface MockProveedor {
@@ -65,7 +65,14 @@ export const mockSuppliersRepository: SuppliersRepository = {
   },
 
   // El mock no registra compras por proveedor.
-  async costHistory(): Promise<SupplierCostEntry[]> {
-    return [];
+  async costHistory(): Promise<SupplierCostHistoryPage> {
+    return {
+      items: [],
+      total: 0,
+      page: 1,
+      limit: 20,
+      totalPages: 1,
+      filters: { items: [] },
+    };
   },
 };

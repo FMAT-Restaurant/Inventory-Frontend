@@ -1,19 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { wasteRepository } from "../../../services/waste";
-import type {
-  ConsumedBatch,
-  ServedOrder,
-  WasteInput,
-} from "../../../services/waste";
+import type { WasteInput } from "../../../services/waste";
 import { batchesRepository } from "../../../services/batches";
 import type { Batch } from "../../../services/batches";
 import { itemsRepository } from "../../../services/items";
 import type { Item } from "../../../services/items";
 
-export interface ConsumedBatchOption extends ConsumedBatch {
+export interface WasteBatchOption {
+  batchId: string;
   batchNumber: string;
   itemName: string;
   unit: string;
+  quantity: number;
 }
 
 function errorMessage(err: unknown, fallback: string): string {
@@ -22,16 +20,15 @@ function errorMessage(err: unknown, fallback: string): string {
 
 export function validateWasteInput(
   input: WasteInput,
-  remaining?: number,
+  available?: number,
 ): string | null {
-  if (!input.orderId) return "Selecciona la orden servida.";
-  if (!input.batchId) return "Selecciona el lote consumido.";
+  if (!input.batchId) return "Selecciona el lote donde se generó la merma.";
   const quantity = Number(input.quantity);
   if (!Number.isFinite(quantity) || quantity <= 0) {
     return "La cantidad debe ser mayor a 0.";
   }
-  if (remaining !== undefined && quantity > remaining) {
-    return `La cantidad excede lo disponible para merma (${remaining}).`;
+  if (available !== undefined && quantity > available) {
+    return `La cantidad excede lo que queda en el lote (${available}).`;
   }
   if (!input.reason || !input.reason.trim()) {
     return "Indica el motivo de la merma.";
@@ -40,73 +37,64 @@ export function validateWasteInput(
 }
 
 /**
- * Lógica del registro de mermas: carga las órdenes servidas, los lotes que
- * consumió cada una y envía la merma. No modifica el stock.
+ * Lógica del registro de mermas: carga los lotes con existencias y envía la
+ * merma, que descuenta la cantidad del lote.
  */
 export function useWaste(enabled: boolean) {
-  const [orders, setOrders] = useState<ServedOrder[]>([]);
   const [batches, setBatches] = useState<Batch[]>([]);
   const [items, setItems] = useState<Item[]>([]);
-  const [consumed, setConsumed] = useState<ConsumedBatch[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const loadOrders = useCallback(async () => {
+  const loadBatches = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [orderList, batchList, itemList] = await Promise.all([
-        wasteRepository.listServedOrders(),
+      const [batchList, itemList] = await Promise.all([
         batchesRepository.list(),
         itemsRepository.list(),
       ]);
-      setOrders(orderList);
       setBatches(batchList);
       setItems(itemList);
     } catch (err) {
-      setError(errorMessage(err, "No se pudieron cargar las órdenes servidas."));
+      setError(errorMessage(err, "No se pudieron cargar los lotes."));
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    if (enabled) void loadOrders();
-  }, [enabled, loadOrders]);
+    if (enabled) void loadBatches();
+  }, [enabled, loadBatches]);
 
-  const loadConsumed = useCallback(async (orderId: string) => {
-    setConsumed([]);
-    if (!orderId) return;
-    setError(null);
-    try {
-      setConsumed(await wasteRepository.listConsumedBatches(orderId));
-    } catch (err) {
-      setError(errorMessage(err, "No se pudieron cargar los lotes de la orden."));
-    }
-  }, []);
-
-  const batchOptions = useMemo<ConsumedBatchOption[]>(() => {
-    const batchById = new Map(batches.map((batch) => [batch.id, batch]));
+  const batchOptions = useMemo<WasteBatchOption[]>(() => {
     const itemById = new Map(items.map((item) => [item.id, item]));
-    return consumed.map((entry) => {
-      const batch = batchById.get(entry.batchId);
-      const item = batch ? itemById.get(batch.itemId) : undefined;
-      return {
-        ...entry,
-        batchNumber: batch?.batchNumber ?? entry.batchId,
-        itemName: item?.name ?? "Insumo no disponible",
-        unit: item?.unit ?? "",
-      };
-    });
-  }, [consumed, batches, items]);
+    return batches
+      .filter((batch) => batch.quantity > 0)
+      .map((batch) => {
+        const item = itemById.get(batch.itemId);
+        return {
+          batchId: batch.id,
+          batchNumber: batch.batchNumber,
+          itemName: item?.name ?? "Insumo no disponible",
+          unit: item?.unit ?? "",
+          quantity: batch.quantity,
+        };
+      })
+      .sort(
+        (a, b) =>
+          a.itemName.localeCompare(b.itemName) ||
+          a.batchNumber.localeCompare(b.batchNumber),
+      );
+  }, [batches, items]);
 
   const register = useCallback(
     async (input: WasteInput) => {
-      const remaining = batchOptions.find(
+      const available = batchOptions.find(
         (option) => option.batchId === input.batchId,
-      )?.remaining;
-      const validationError = validateWasteInput(input, remaining);
+      )?.quantity;
+      const validationError = validateWasteInput(input, available);
       if (validationError) {
         setError(validationError);
         throw new Error(validationError);
@@ -128,15 +116,5 @@ export function useWaste(enabled: boolean) {
 
   const clearError = useCallback(() => setError(null), []);
 
-  return {
-    orders,
-    batchOptions,
-    loading,
-    saving,
-    error,
-    clearError,
-    loadOrders,
-    loadConsumed,
-    register,
-  };
+  return { batchOptions, loading, saving, error, clearError, register };
 }

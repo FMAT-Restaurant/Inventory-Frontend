@@ -3,9 +3,4 @@
  * pantalla de movimientos conserva su simulador local.
  */
 export { httpWasteRepository as wasteRepository } from "./httpWasteRepository";
-export type {
-  ConsumedBatch,
-  ServedOrder,
-  WasteInput,
-  WasteRepository,
-} from "./types";
+export type { WasteInput, WasteRepository } from "./types";

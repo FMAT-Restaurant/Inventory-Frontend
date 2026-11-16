@@ -4,23 +4,15 @@ import { Input, Select } from '../../../components/ui/Input.jsx';
 import { Modal } from '../../../components/ui/Modal.jsx';
 import { useWaste } from '../hooks/useWaste';
 
-const EMPTY_FORM = { orderId: '', batchId: '', quantity: '', reason: '' };
+const EMPTY_FORM = { batchId: '', quantity: '', reason: '' };
 
 /**
- * Registro de merma de una orden servida: la pérdida de un insumo que ya se
- * descontó del inventario. No modifica el stock, solo queda en el historial.
+ * Registro de merma: el lote en el que se generó, la cantidad perdida y el
+ * motivo. La cantidad se descuenta del lote y queda en el historial.
  */
 export function WasteFormModal({ isOpen, onClose, onSaved }) {
-  const {
-    orders,
-    batchOptions,
-    loading,
-    saving,
-    error,
-    clearError,
-    loadConsumed,
-    register,
-  } = useWaste(isOpen);
+  const { batchOptions, loading, saving, error, clearError, register } =
+    useWaste(isOpen);
   const [form, setForm] = useState(EMPTY_FORM);
 
   useEffect(() => {
@@ -34,16 +26,10 @@ export function WasteFormModal({ isOpen, onClose, onSaved }) {
     (option) => option.batchId === form.batchId,
   );
 
-  const handleOrderChange = (orderId) => {
-    setForm({ ...EMPTY_FORM, orderId });
-    void loadConsumed(orderId);
-  };
-
   const handleSubmit = async (event) => {
     event.preventDefault();
     try {
       await register({
-        orderId: form.orderId,
         batchId: form.batchId,
         quantity: Number(form.quantity),
         reason: form.reason,
@@ -61,52 +47,26 @@ export function WasteFormModal({ isOpen, onClose, onSaved }) {
         onSubmit={handleSubmit}
         style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
       >
-        <p style={{ fontSize: 'var(--small-size)', color: 'var(--color-muted)' }}>
-          Registra la pérdida de insumos de una orden ya servida. El stock ya se
-          descontó al servirla, así que la merma no lo modifica.
-        </p>
-
         <Select
-          label="Orden servida"
-          value={form.orderId}
-          onChange={(e) => handleOrderChange(e.target.value)}
+          label="Lote"
+          value={form.batchId}
+          onChange={(e) =>
+            setForm((prev) => ({ ...prev, batchId: e.target.value }))
+          }
           disabled={loading || saving}
           required
         >
           <option value="">
             {loading
-              ? 'Cargando órdenes...'
-              : orders.length === 0
-                ? 'No hay órdenes servidas'
-                : 'Selecciona una orden'}
-          </option>
-          {orders.map((order) => (
-            <option key={order.orderId} value={order.orderId}>
-              {order.orderId}
-            </option>
-          ))}
-        </Select>
-
-        <Select
-          label="Lote consumido"
-          value={form.batchId}
-          onChange={(e) => setForm((prev) => ({ ...prev, batchId: e.target.value }))}
-          disabled={!form.orderId || saving}
-          required
-        >
-          <option value="">
-            {form.orderId && batchOptions.length === 0
-              ? 'La orden no consumió lotes'
-              : 'Selecciona un lote'}
+              ? 'Cargando lotes...'
+              : batchOptions.length === 0
+                ? 'No hay lotes con existencias'
+                : 'Selecciona un lote'}
           </option>
           {batchOptions.map((option) => (
-            <option
-              key={option.batchId}
-              value={option.batchId}
-              disabled={option.remaining <= 0}
-            >
-              {option.itemName} · {option.batchNumber} (disponible para merma:{' '}
-              {option.remaining} {option.unit})
+            <option key={option.batchId} value={option.batchId}>
+              {option.itemName} · {option.batchNumber} ({option.quantity}{' '}
+              {option.unit})
             </option>
           ))}
         </Select>
@@ -116,12 +76,14 @@ export function WasteFormModal({ isOpen, onClose, onSaved }) {
           type="number"
           step="0.001"
           min="0.001"
-          max={selectedBatch ? String(selectedBatch.remaining) : undefined}
+          max={selectedBatch ? String(selectedBatch.quantity) : undefined}
           value={form.quantity}
-          onChange={(e) => setForm((prev) => ({ ...prev, quantity: e.target.value }))}
+          onChange={(e) =>
+            setForm((prev) => ({ ...prev, quantity: e.target.value }))
+          }
           helperText={
             selectedBatch
-              ? `Consumido: ${selectedBatch.consumed} ${selectedBatch.unit}. Ya registrado como merma: ${selectedBatch.alreadyWasted} ${selectedBatch.unit}.`
+              ? `En el lote: ${selectedBatch.quantity} ${selectedBatch.unit}. Se descontará del lote.`
               : undefined
           }
           required
@@ -130,8 +92,10 @@ export function WasteFormModal({ isOpen, onClose, onSaved }) {
         <Input
           label="Motivo"
           value={form.reason}
-          onChange={(e) => setForm((prev) => ({ ...prev, reason: e.target.value }))}
-          placeholder="Ej. Platillo devuelto sin reingreso posible"
+          onChange={(e) =>
+            setForm((prev) => ({ ...prev, reason: e.target.value }))
+          }
+          placeholder="Ej. Se echó a perder, se cayó, producto dañado"
           required
         />
 
@@ -147,7 +111,14 @@ export function WasteFormModal({ isOpen, onClose, onSaved }) {
           </span>
         )}
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '8px' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            gap: '12px',
+            marginTop: '8px',
+          }}
+        >
           <Button variant="tertiary" onClick={onClose} disabled={saving}>
             Cancelar
           </Button>

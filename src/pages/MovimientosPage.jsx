@@ -53,11 +53,8 @@ export function MovimientosPage() {
   } = useInventory();
 
   const { can } = useAuth();
-  // Registrar merma requiere ver órdenes servidas y escribir en lotes.
-  const canRegisterWaste =
-    !ENV.USE_MOCK &&
-    can(PERMISSIONS.BATCHES_WRITE) &&
-    can(PERMISSIONS.RESERVATIONS_READ);
+  // Registrar merma descuenta del lote: requiere escribir en lotes.
+  const canRegisterWaste = !ENV.USE_MOCK && can(PERMISSIONS.BATCHES_WRITE);
   const [isWasteOpen, setIsWasteOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [tipoSalida, setTipoSalida] = useState('PREPARACION'); // 'PREPARACION' | 'MERMA'
