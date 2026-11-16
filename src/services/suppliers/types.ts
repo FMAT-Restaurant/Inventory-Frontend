@@ -89,10 +89,61 @@ export type SupplierUpdateInput = Partial<SupplierInput>;
  *   - El repo es stateless: no cachea. El caché es responsabilidad del hook
  *     (`useSuppliers`) o del componente que lo consuma.
  */
+/** Compra registrada a un proveedor (un lote), para el historial de costos. */
+export interface SupplierCostEntry {
+  batchId: string;
+  batchNumber: string;
+  itemId: string;
+  itemName: string;
+  unit: string;
+  quantity: number;
+  /** Costo unitario de compra al registrar el lote. */
+  cost: number;
+  /** ISO-8601. */
+  purchasedAt: string;
+}
+
+/** Filtros y paginación del historial de costos. Todo es opcional. */
+export interface CostHistoryQuery {
+  itemId?: string;
+  /** ISO-8601. Compras desde este instante. */
+  from?: string;
+  /** ISO-8601. Compras hasta este instante. */
+  to?: string;
+  /** Por fecha de compra. Por defecto `desc` (la más reciente primero). */
+  order?: "asc" | "desc";
+  page?: number;
+  limit?: number;
+}
+
+/** Insumo que el proveedor ha surtido, para poblar el filtro por insumo. */
+export interface CostHistoryItemFilter {
+  itemId: string;
+  itemName: string;
+  unit: string;
+}
+
+export interface SupplierCostHistoryPage {
+  items: SupplierCostEntry[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  filters: { items: CostHistoryItemFilter[] };
+}
+
 export interface SuppliersRepository {
   list(): Promise<Supplier[]>;
   getById(id: string): Promise<Supplier | null>;
   create(input: SupplierInput): Promise<Supplier>;
   update(id: string, input: SupplierUpdateInput): Promise<Supplier>;
   remove(id: string): Promise<void>;
+  /**
+   * Compras del proveedor, paginadas y con la más reciente primero por
+   * defecto (incluye proveedores dados de baja).
+   */
+  costHistory(
+    id: string,
+    query?: CostHistoryQuery,
+  ): Promise<SupplierCostHistoryPage>;
 }
