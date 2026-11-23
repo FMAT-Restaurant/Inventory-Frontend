@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card } from "../../../components/ui/Card.jsx";
 import { Badge } from "../../../components/ui/Badge.jsx";
 import { Button } from "../../../components/ui/Button.jsx";
@@ -27,10 +28,18 @@ export function BatchItemCard({
   onDeleteBatch,
   disabled = false,
 }) {
+  const [showDepleted, setShowDepleted] = useState(false);
+
+  const operationalBatches = batches.filter((b) => b.status !== "depleted");
+  const depletedBatches = batches.filter((b) => b.status === "depleted");
+  const visibleBatches = showDepleted
+    ? [...operationalBatches, ...depletedBatches]
+    : operationalBatches;
+
   // El lote de uso prioritario es el primero utilizable por fecha de
   // vencimiento; los caducados o agotados que lo preceden no cuentan.
-  const priorityBatchId = batches.find(isUsableBatch)?.id;
-  const expiredQuantity = batches
+  const priorityBatchId = operationalBatches.find(isUsableBatch)?.id;
+  const expiredQuantity = operationalBatches
     .filter((b) => b.status === "expired" && Number(b.quantity) > 0)
     .reduce((sum, b) => sum + Number(b.quantity), 0);
 
@@ -148,7 +157,7 @@ export function BatchItemCard({
 
         <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
           <Button variant="tertiary" size="sm" onClick={onToggleExpand}>
-            <span>Lotes ({batches.length})</span>
+            <span>Lotes ({operationalBatches.length})</span>
             <ChevronDownIcon
               size={14}
               style={{
@@ -185,6 +194,9 @@ export function BatchItemCard({
             style={{
               display: "flex",
               justifyContent: "space-between",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: "8px",
               marginBottom: "10px",
             }}
           >
@@ -196,24 +208,43 @@ export function BatchItemCard({
                 textTransform: "uppercase",
               }}
             >
-              Lotes registrados (ordenados por fecha de vencimiento)
+              Lotes vigentes y pendientes (orden FEFO)
             </span>
+            {depletedBatches.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowDepleted((prev) => !prev)}
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  color: "var(--color-primary)",
+                  fontSize: "var(--caption-size)",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  padding: "2px 4px",
+                }}
+              >
+                {showDepleted
+                  ? `Ocultar agotados (${depletedBatches.length})`
+                  : `Mostrar agotados (${depletedBatches.length})`}
+              </button>
+            )}
           </div>
 
-          {batches.length === 0 ? (
+          {visibleBatches.length === 0 ? (
             <p
               style={{
                 fontSize: "var(--small-size)",
                 color: "var(--color-muted)",
               }}
             >
-              No hay lotes registrados.
+              No hay lotes vigentes registrados.
             </p>
           ) : (
             <div
               style={{ display: "flex", flexDirection: "column", gap: "8px" }}
             >
-              {batches.map((lote) => {
+              {visibleBatches.map((lote) => {
                 const esPrioridad = lote.id === priorityBatchId;
                 const isDepleted = lote.status === "depleted";
                 const isExpired = lote.status === "expired";

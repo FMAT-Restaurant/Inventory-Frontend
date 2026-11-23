@@ -282,10 +282,14 @@ test.describe("BatchesPage — E2E flujo completo (Front + Back + MongoDB)", () 
       const card = itemCardOf(page, seeded.name);
       await card.getByRole("button", { name: /Lotes \(2\)/ }).click();
 
-      // Dar de baja lote caducado
+      // Dar de baja lote caducado -> desaparece de lotes vigentes y pasa a agotados
       await card.getByRole("button", { name: "Dar de baja" }).click();
       await page.getByRole("button", { name: "Confirmar baja" }).click();
-      await expect(card.getByText("AGOTADO")).toBeVisible();
+      await expect(
+        card.getByRole("button", { name: "Mostrar agotados (1)" }),
+      ).toBeVisible();
+      await card.getByRole("button", { name: "Mostrar agotados (1)" }).click();
+      await expect(card.getByText("AGOTADO", { exact: true })).toBeVisible();
 
       // Eliminar lote activo sin consumo
       await card.getByRole("button", { name: "Eliminar" }).click();
