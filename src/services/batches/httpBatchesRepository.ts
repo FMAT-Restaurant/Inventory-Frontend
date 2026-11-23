@@ -11,11 +11,13 @@
  */
 
 import { request } from "../http/client";
+import { buildPageQuery, toPage } from "../pagination";
 import type {
   Batch,
   BatchesRepository,
   BatchStatus,
   CreateBatchInput,
+  ListBatchesParams,
   UpdateBatchInput,
 } from "./types";
 
@@ -59,12 +61,10 @@ function normalizeBatch(raw: RawBatch): Batch {
 }
 
 export const httpBatchesRepository: BatchesRepository = {
-  async list(itemId?: string) {
-    const query = itemId
-      ? `?itemId=${encodeURIComponent(itemId)}`
-      : "";
-    const items = await request<RawBatch[]>(`/batches${query}`);
-    return (items ?? []).map(normalizeBatch);
+  async list(params: ListBatchesParams = {}) {
+    const query = buildPageQuery(params, { itemId: params.itemId });
+    const raw = await request<unknown>(`/batches${query}`);
+    return toPage<RawBatch, Batch>(raw, params, normalizeBatch);
   },
 
   async getById(id: string) {

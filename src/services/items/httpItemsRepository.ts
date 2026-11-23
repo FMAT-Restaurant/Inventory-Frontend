@@ -15,7 +15,14 @@
  */
 
 import { request } from "../http/client";
-import type { Item, ItemInput, ItemsRepository, Supplier } from "./types";
+import { buildPageQuery, toPage } from "../pagination";
+import type {
+  Item,
+  ItemInput,
+  ItemsRepository,
+  ListItemsParams,
+  Supplier,
+} from "./types";
 
 /**
  * Construye el payload del backend a partir del formulario de la UI.
@@ -62,9 +69,10 @@ function normalizeItem(item: Item & { _id?: string }): Item {
 }
 
 export const httpItemsRepository: ItemsRepository = {
-  async list() {
-    const items = await request<(Item & { _id?: string })[]>("/items");
-    return items.map(normalizeItem);
+  async list(params: ListItemsParams = {}) {
+    const query = buildPageQuery(params, { q: params.q?.trim() || undefined });
+    const raw = await request<unknown>(`/items${query}`);
+    return toPage<Item & { _id?: string }, Item>(raw, params, normalizeItem);
   },
 
   async getById(id) {
@@ -94,13 +102,12 @@ export const httpItemsRepository: ItemsRepository = {
     await request<void>(`/items/${id}`, { method: "DELETE" });
   },
 
-  async listSuppliers() {
+   async listSuppliers(params: { page?: number; limit?: number } = {}) {
     // Se piden también los dados de baja para poder mostrar el nombre de
     // los que siguen asignados a lotes o insumos.
-    const suppliers = await request<(Supplier & { _id?: string })[]>(
-      "/suppliers?includeInactive=true",
-    );
-    return suppliers.map((supplier) => ({
+    const query = buildPageQuery(params, { includeInactive: "true" });
+    const raw = await request<unknown>(`/suppliers${query}`);
+    return toPage<Supplier & { _id?: string }, Supplier>(raw, params, (supplier) => ({
       ...supplier,
       id: supplier.id || supplier._id || "",
     }));

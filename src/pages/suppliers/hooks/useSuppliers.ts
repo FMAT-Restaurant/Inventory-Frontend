@@ -4,10 +4,15 @@
  *
  * Patrón:
  *   View (JSX) → useSuppliers() → suppliersRepository → HTTP | mock
+ *
+ * Paginación server-side sobre `list()`. La búsqueda se delega al backend
+ * vía `q` si el filtro de texto lo permite; en caso contrario se aplica en
+ * memoria sobre la página actual.
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { suppliersRepository } from '../../../services/suppliers';
+import { usePagination, type PaginationBarProps } from '../../../hooks/usePagination';
 import type {
   Supplier,
   SupplierInput,
@@ -18,9 +23,16 @@ export type SaveSupplierInput = SupplierInput & { id?: string };
 
 export interface SupplierFilters {
   search: string;
+  includeInactive: boolean;
 }
 
-const INITIAL_FILTERS: SupplierFilters = { search: '' };
+const INITIAL_FILTERS: SupplierFilters = {
+  search: '',
+  includeInactive: false,
+};
+
+/** Tamaño de página por defecto para el listado de proveedores. */
+export const DEFAULT_SUPPLIERS_LIMIT = 20;
 
 export interface UseSuppliersResult {
   suppliers: Supplier[];
@@ -35,6 +47,7 @@ export interface UseSuppliersResult {
   reload: () => Promise<void>;
   save: (input: SaveSupplierInput) => Promise<Supplier>;
   remove: (id: string) => Promise<void>;
+  pagination: PaginationBarProps;
 }
 
 /**
@@ -75,18 +88,33 @@ export function useSuppliers(): UseSuppliersResult {
   const [message, setMessage] = useState<string | null>(null);
   const [filters, setFilters] = useState<SupplierFilters>(INITIAL_FILTERS);
 
+  const {
+    pagination,
+    page,
+    limit,
+    applyPage,
+    goToPage,
+    changeLimit,
+    resetPage,
+  } = usePagination(DEFAULT_SUPPLIERS_LIMIT);
+
   const reload = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const items = await suppliersRepository.list();
-      setSuppliers(items);
+      const result = await suppliersRepository.list({
+        includeInactive: filters.includeInactive,
+        page,
+        limit,
+      });
+      setSuppliers(result.items);
+      applyPage(result);
     } catch (err) {
       setError(errorMessage(err, 'No se pudieron cargar los proveedores.'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [filters.includeInactive, page, limit, applyPage]);
 
   useEffect(() => {
     void reload();
@@ -155,10 +183,24 @@ export function useSuppliers(): UseSuppliersResult {
     [suppliers, reload],
   );
 
-  const updateFilters = useCallback((partial: Partial<SupplierFilters>) => {
-    setFilters((prev) => ({ ...prev, ...partial }));
-  }, []);
+  const updateFilters = useCallback(
+    (partial: Partial<SupplierFilters>) => {
+      setFilters((prev) => {
+        const shouldResetPage =
+          (partial.search !== undefined && partial.search !== prev.search) ||
+          (partial.includeInactive !== undefined &&
+            partial.includeInactive !== prev.includeInactive);
+        if (shouldResetPage) resetPage();
+        return { ...prev, ...partial };
+      });
+    },
+    [resetPage],
+  );
 
+  /**
+   * El backend no expone búsqueda textual para proveedores, así que el
+   * filtro se aplica en memoria sobre la página actual.
+   */
   const filteredSuppliers = useMemo(() => {
     const search = filters.search.trim().toLowerCase();
     if (!search) return suppliers;
@@ -183,5 +225,6 @@ export function useSuppliers(): UseSuppliersResult {
     reload,
     save,
     remove,
+    pagination,
   };
 }

@@ -21,5 +21,6 @@ export type {
   BatchStatus,
   BatchesRepository,
   CreateBatchInput,
+  ListBatchesParams,
   UpdateBatchInput,
 } from "./types";

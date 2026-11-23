@@ -34,24 +34,25 @@ describe('mockSuppliersRepository', () => {
 
   describe('list', () => {
     it('mapea nombre -> name, contacto -> contactName, telefono -> phone', async () => {
-      const result = await mockSuppliersRepository.list();
+      const page = await mockSuppliersRepository.list();
 
-      expect(result).toHaveLength(1);
-      expect(result[0]).toEqual({
+      expect(page.items).toHaveLength(1);
+      expect(page.items[0]).toEqual({
         id: 'prov-1',
         name: 'Molinos del Valle',
         contactName: 'ventas@molinos.com',
         phone: '+52 999 101 2020',
       });
-      expect(result[0]).not.toHaveProperty('nombre');
-      expect(result[0]).not.toHaveProperty('contacto');
-      expect(result[0]).not.toHaveProperty('telefono');
+      expect(page.items[0]).not.toHaveProperty('nombre');
+      expect(page.items[0]).not.toHaveProperty('contacto');
+      expect(page.items[0]).not.toHaveProperty('telefono');
     });
 
     it('devuelve [] si el mock no tiene proveedores', async () => {
       vi.spyOn(mockService, 'getProveedores').mockResolvedValueOnce([]);
-      const result = await mockSuppliersRepository.list();
-      expect(result).toEqual([]);
+      const page = await mockSuppliersRepository.list();
+      expect(page.items).toEqual([]);
+      expect(page.total).toBe(0);
     });
   });
 

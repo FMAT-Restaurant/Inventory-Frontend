@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useSuppliers } from './hooks/useSuppliers.js';
+import { PaginatedSection } from '../../components/ui/PaginatedSection.jsx';
 import { SuppliersToolbar } from './components/SuppliersToolbar.jsx';
 import { SupplierCard } from './components/SupplierCard.jsx';
 import { SupplierCostHistoryModal } from './components/SupplierCostHistoryModal.jsx';
@@ -20,6 +21,7 @@ export function SuppliersPage() {
     clearMessage,
     save,
     remove,
+    pagination,
   } = useSuppliers();
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -125,11 +127,17 @@ export function SuppliersPage() {
         disabled={loading}
       />
 
-      {loading && filteredSuppliers.length === 0 ? (
-        <SuppliersEmptyState loading />
-      ) : filteredSuppliers.length === 0 ? (
-        <SuppliersEmptyState />
-      ) : (
+      <PaginatedSection
+        loading={loading}
+        total={pagination.total}
+        filteredCount={filteredSuppliers.length}
+        emptyState={<SuppliersEmptyState />}
+        loadingState={<SuppliersEmptyState loading />}
+        noMatchesMessage="Ningún proveedor de esta página coincide con la búsqueda. Prueba otra página o ajusta el término."
+        pagination={pagination}
+        paginationDisabled={loading || saving}
+        paginationLabel="proveedores"
+      >
         <div className="grid-responsive">
           {filteredSuppliers.map((supplier) => (
             <SupplierCard
@@ -142,7 +150,7 @@ export function SuppliersPage() {
             />
           ))}
         </div>
-      )}
+      </PaginatedSection>
 
       <SupplierFormModal
         isOpen={modalOpen}

@@ -10,6 +10,7 @@ import { Badge } from '../components/ui/Badge.jsx';
 import { Button } from '../components/ui/Button.jsx';
 import { Input, Select } from '../components/ui/Input.jsx';
 import { Modal } from '../components/ui/Modal.jsx';
+import { PaginationBar } from '../components/ui/PaginationBar.jsx';
 import {
   ArrowDownLeftIcon,
   ArrowUpRightIcon,
@@ -44,7 +45,13 @@ function movementDetail(movement) {
 }
 
 export function MovimientosPage() {
-  const { rows, loading, error, reload } = useMovements();
+  const {
+    rows,
+    loading,
+    error,
+    reload,
+    pagination,
+  } = useMovements();
   const {
     platillos,
     consumirRecetaDirecta,
@@ -173,7 +180,9 @@ export function MovimientosPage() {
               ) : rows.length === 0 ? (
                 <tr>
                   <td colSpan={4} style={{ padding: '32px 20px', textAlign: 'center', color: 'var(--color-muted)' }}>
-                    No hay movimientos registrados en el período actual.
+                    {pagination.total === 0
+                      ? 'No hay movimientos registrados en el período actual.'
+                      : 'No hay movimientos en esta página.'}
                   </td>
                 </tr>
               ) : (
@@ -236,6 +245,12 @@ export function MovimientosPage() {
           </table>
         </div>
       </Card>
+
+      <PaginationBar
+        {...pagination}
+        disabled={loading}
+        label="movimientos"
+      />
 
       {/* Modal Registrar Salida de Insumos (solo disponible en modo mock) */}
       {ENV.USE_MOCK && (

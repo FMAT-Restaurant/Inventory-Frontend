@@ -2,6 +2,7 @@
  * Implementación MOCK del repositorio de recetas para desarrollo local (dev).
  */
 
+import { paginateInMemory } from "../pagination";
 import type {
   CreateRecipeInput,
   QueryRecipesParams,
@@ -124,12 +125,12 @@ function notify() {
 }
 
 export const mockRecipesRepository: RecipesRepository = {
-  async list(params?: QueryRecipesParams): Promise<Recipe[]> {
+  async list(params: QueryRecipesParams = {}) {
     let result = [...mockStore];
-    if (params?.available !== undefined) {
+    if (params.available !== undefined) {
       result = result.filter((r) => r.isAvailable === params.available);
     }
-    return result;
+    return paginateInMemory(result, params.page, params.limit);
   },
 
   async getByIdOrPlateId(idOrPlateId: string): Promise<Recipe | null> {

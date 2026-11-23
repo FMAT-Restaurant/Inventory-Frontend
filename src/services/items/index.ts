@@ -20,6 +20,8 @@ export type {
   Item,
   ItemInput,
   ItemsRepository,
+  ListItemsParams,
   Supplier,
   EstadoUmbral,
 } from "./types";
+export type { PaginatedResponse } from "../types";

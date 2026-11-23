@@ -2,6 +2,8 @@
  * Tipos del dominio de lotes (batches) expuestos a la UI.
  */
 
+import type { PaginatedResponse } from "../types";
+
 export type BatchStatus = "active" | "expires_today" | "expired" | "depleted";
 
 export interface Batch {
@@ -32,12 +34,19 @@ export interface UpdateBatchInput {
   expirationDate?: string;
 }
 
+/** Parámetros de listado de lotes. */
+export interface ListBatchesParams {
+  itemId?: string;
+  page?: number;
+  limit?: number;
+}
+
 /**
  * Contrato único de acceso a datos de lotes.
  * Implementado por el repositorio mock (dev) y el HTTP (qa/prod).
  */
 export interface BatchesRepository {
-  list(itemId?: string): Promise<Batch[]>;
+  list(params?: ListBatchesParams): Promise<PaginatedResponse<Batch>>;
   getById(id: string): Promise<Batch | null>;
   create(input: CreateBatchInput): Promise<Batch>;
   update(id: string, input: UpdateBatchInput): Promise<Batch>;

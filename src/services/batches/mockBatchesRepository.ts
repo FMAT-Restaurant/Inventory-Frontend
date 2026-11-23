@@ -8,11 +8,13 @@
 import { mockService } from "../inventory/mockService.js";
 import { inventoryStore } from "../inventory/store.js";
 import { EstadoLote } from "../inventory/types.js";
+import { paginateInMemory } from "../pagination";
 import type {
   Batch,
   BatchesRepository,
   BatchStatus,
   CreateBatchInput,
+  ListBatchesParams,
   UpdateBatchInput,
 } from "./types";
 
@@ -61,13 +63,14 @@ function toBatch(lote: MockRawLote): Batch {
 }
 
 export const mockBatchesRepository: BatchesRepository = {
-  async list(itemId?: string): Promise<Batch[]> {
+  async list(params: ListBatchesParams = {}) {
     const snapshot = mockService.getSnapshot();
     const lotes = (snapshot.lotes ?? []) as MockRawLote[];
-    const filtered = itemId
-      ? lotes.filter((l) => l.itemId === itemId)
+    const filtered = params.itemId
+      ? lotes.filter((l) => l.itemId === params.itemId)
       : lotes;
-    return filtered.map(toBatch);
+    const mapped = filtered.map(toBatch);
+    return paginateInMemory(mapped, params.page, params.limit);
   },
 
   async getById(id: string): Promise<Batch | null> {

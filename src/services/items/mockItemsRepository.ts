@@ -7,7 +7,13 @@
  */
 
 import { mockService } from '../inventory/mockService.js';
-import type { Item, ItemsRepository, Supplier } from './types';
+import { paginateInMemory } from '../pagination';
+import type {
+  Item,
+  ItemsRepository,
+  ListItemsParams,
+  Supplier,
+} from './types';
 
 /**
  * Normaliza un item del almacén en memoria para que siempre tenga
@@ -24,9 +30,26 @@ function normalizeItem(item: Record<string, unknown>): Item {
 }
 
 export const mockItemsRepository: ItemsRepository = {
-  async list(): Promise<Item[]> {
-    const items = await mockService.getItems();
-    return (items as unknown as Record<string, unknown>[]).map(normalizeItem);
+  async list(params: ListItemsParams = {}) {
+    const all = await mockService.getItems();
+    const normalized = (all as unknown as Record<string, unknown>[]).map(
+      normalizeItem,
+    );
+    const q = params.q?.trim().toLowerCase();
+    const filtered = q
+      ? normalized.filter((item) => {
+          const haystack = [
+            item.name,
+            item.sku,
+            item.category,
+            item.description,
+          ]
+            .filter((v): v is string => typeof v === "string")
+            .map((v) => v.toLowerCase());
+          return haystack.some((v) => v.includes(q));
+        })
+      : normalized;
+    return paginateInMemory(filtered, params.page, params.limit);
   },
 
   async getById(id: string): Promise<Item | null> {
@@ -60,8 +83,9 @@ export const mockItemsRepository: ItemsRepository = {
     await mockService.deleteItem(id);
   },
 
-  async listSuppliers() {
-    return (await mockService.getProveedores()) as Supplier[];
+  async listSuppliers(params: { page?: number; limit?: number } = {}) {
+    const suppliers = (await mockService.getProveedores()) as Supplier[];
+    return paginateInMemory(suppliers, params.page, params.limit);
   },
 
   subscribe(listener) {

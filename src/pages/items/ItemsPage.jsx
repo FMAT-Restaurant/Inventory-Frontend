@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useItems } from "./hooks/useItems.js";
 import { useColumnCount } from "./hooks/useColumnCount.js";
+import { PaginatedSection } from "../../components/ui/PaginatedSection.jsx";
 import { ItemsToolbar } from "./components/ItemsToolbar.jsx";
 import { ItemCard } from "./components/ItemCard.jsx";
 import { ItemsEmptyState } from "./components/ItemsEmptyState.jsx";
@@ -22,6 +23,7 @@ export function ItemsPage() {
     clearMessage,
     save,
     remove,
+    pagination,
   } = useItems();
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -141,11 +143,17 @@ export function ItemsPage() {
         disabled={loading}
       />
 
-      {loading && filteredItems.length === 0 ? (
-        <ItemsEmptyState loading />
-      ) : filteredItems.length === 0 ? (
-        <ItemsEmptyState />
-      ) : (
+      <PaginatedSection
+        loading={loading}
+        total={pagination.total}
+        filteredCount={filteredItems.length}
+        emptyState={<ItemsEmptyState />}
+        loadingState={<ItemsEmptyState loading />}
+        noMatchesMessage="Ningún insumo de esta página coincide con la categoría seleccionada. Prueba otra página o cambia el filtro."
+        pagination={pagination}
+        paginationDisabled={loading || saving}
+        paginationLabel="insumos"
+      >
         <div
           style={{
             display: "flex",
@@ -183,7 +191,7 @@ export function ItemsPage() {
             </div>
           ))}
         </div>
-      )}
+      </PaginatedSection>
 
       <ItemFormModal
         isOpen={modalOpen}
