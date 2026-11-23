@@ -38,7 +38,7 @@ export function BatchItemCard({
   const canWrite = can(PERMISSIONS.BATCHES_WRITE);
 
   return (
-    <Card padding="20px">
+    <Card className="batch-item-card" padding="20px">
       <div
         style={{
           display: "flex",
