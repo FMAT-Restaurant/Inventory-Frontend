@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { itemsRepository } from "../../../services/items";
 import { fetchAllPages } from "../../../services/pagination";
+import { usePagination } from "../../../hooks/usePagination";
 import { isActiveSupplier } from "../../../services/suppliers/labels";
 import type { Item, ItemInput, Supplier } from "../../../services/items";
 
@@ -58,11 +59,16 @@ export function useItems() {
   const [message, setMessage] = useState<string | null>(null);
   const [filters, setFilters] = useState<ItemFilters>(INITIAL_FILTERS);
 
-  // Estado de paginación
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState<number>(DEFAULT_ITEMS_LIMIT);
-  const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
+  // Estado de paginación compartido (usePagination).
+  const {
+    pagination,
+    page,
+    limit,
+    applyPage,
+    goToPage,
+    changeLimit,
+    resetPage,
+  } = usePagination(DEFAULT_ITEMS_LIMIT);
 
   // Página de insumos (depende de búsqueda + page/limit).
   const reloadItems = useCallback(async () => {
@@ -76,14 +82,13 @@ export function useItems() {
         limit,
       });
       setItems(pageData.items);
-      setTotal(pageData.total);
-      setTotalPages(pageData.totalPages);
+      applyPage(pageData);
     } catch (err) {
       setError(errorMessage(err, "No se pudieron cargar los insumos."));
     } finally {
       setLoading(false);
     }
-  }, [filters.search, page, limit]);
+  }, [filters.search, page, limit, applyPage]);
 
   // Catálogo de proveedores: se carga al montar y cuando se invalida.
   // `fetchAllPages` respeta el límite de 100 del backend trayendo todas
@@ -181,27 +186,17 @@ export function useItems() {
    * Actualiza filtros de búsqueda/categoría. Cambiar la búsqueda resetea
    * la página a 1 para no quedarse fuera de rango.
    */
-  const updateFilters = useCallback((partial: Partial<ItemFilters>) => {
-    setFilters((prev) => {
-      const next = { ...prev, ...partial };
-      const searchChanged =
-        partial.search !== undefined && partial.search !== prev.search;
-      if (searchChanged) {
-        // Se resetea page en un set independiente para evitar loop.
-        setPage(1);
-      }
-      return next;
-    });
-  }, []);
-
-  const goToPage = useCallback((next: number) => {
-    setPage(Math.max(1, Math.trunc(next) || 1));
-  }, []);
-
-  const changeLimit = useCallback((next: number) => {
-    setLimit(Math.max(1, Math.trunc(next) || 1));
-    setPage(1);
-  }, []);
+  const updateFilters = useCallback(
+    (partial: Partial<ItemFilters>) => {
+      setFilters((prev) => {
+        const searchChanged =
+          partial.search !== undefined && partial.search !== prev.search;
+        if (searchChanged) resetPage();
+        return { ...prev, ...partial };
+      });
+    },
+    [resetPage],
+  );
 
   /**
    * El backend solo expone búsqueda textual `q`. El filtro por categoría
@@ -251,12 +246,7 @@ export function useItems() {
     reload,
     save,
     remove,
-    // Paginación
-    page,
-    limit,
-    total,
-    totalPages,
-    goToPage,
-    changeLimit,
+    // Paginación: propagar con {...pagination} a <PaginationBar />
+    pagination,
   };
 }

@@ -50,12 +50,7 @@ export function MovimientosPage() {
     loading,
     error,
     reload,
-    page,
-    limit,
-    total,
-    totalPages,
-    goToPage,
-    changeLimit,
+    pagination,
   } = useMovements();
   const {
     platillos,
@@ -185,7 +180,7 @@ export function MovimientosPage() {
               ) : rows.length === 0 ? (
                 <tr>
                   <td colSpan={4} style={{ padding: '32px 20px', textAlign: 'center', color: 'var(--color-muted)' }}>
-                    {total === 0
+                    {pagination.total === 0
                       ? 'No hay movimientos registrados en el período actual.'
                       : 'No hay movimientos en esta página.'}
                   </td>
@@ -252,12 +247,7 @@ export function MovimientosPage() {
       </Card>
 
       <PaginationBar
-        page={page}
-        limit={limit}
-        total={total}
-        totalPages={totalPages}
-        onPageChange={goToPage}
-        onLimitChange={changeLimit}
+        {...pagination}
         disabled={loading}
         label="movimientos"
       />

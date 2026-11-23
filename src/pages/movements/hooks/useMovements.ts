@@ -6,6 +6,7 @@ import type { Batch } from "../../../services/batches";
 import { itemsRepository } from "../../../services/items";
 import type { Item } from "../../../services/items";
 import { fetchAllPages } from "../../../services/pagination";
+import { usePagination } from "../../../hooks/usePagination";
 
 export interface MovementRow extends StockMovement {
   batchNumber: string | null;
@@ -36,10 +37,14 @@ export function useMovements() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState<number>(DEFAULT_MOVEMENTS_LIMIT);
-  const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
+  const {
+    pagination,
+    page,
+    limit,
+    applyPage,
+    goToPage,
+    changeLimit,
+  } = usePagination(DEFAULT_MOVEMENTS_LIMIT);
 
   // Bump para volver a cargar los catálogos (lotes + insumos).
   const [catalogVersion, setCatalogVersion] = useState(0);
@@ -51,8 +56,7 @@ export function useMovements() {
     try {
       const movementPage = await movementsRepository.list({ page, limit });
       setMovements(movementPage.items);
-      setTotal(movementPage.total);
-      setTotalPages(movementPage.totalPages);
+      applyPage(movementPage);
     } catch (err) {
       setError(
         errorMessage(err, "No se pudieron cargar los movimientos de almacén."),
@@ -60,7 +64,7 @@ export function useMovements() {
     } finally {
       setLoading(false);
     }
-  }, [page, limit]);
+  }, [page, limit, applyPage]);
 
   // Catálogo de lookup: se carga al montar y cuando se invalida.
   const reloadCatalog = useCallback(async () => {
@@ -100,15 +104,6 @@ export function useMovements() {
     await Promise.all([reload(), reloadCatalog()]);
   }, [reload, reloadCatalog]);
 
-  const goToPage = useCallback((next: number) => {
-    setPage(Math.max(1, Math.trunc(next) || 1));
-  }, []);
-
-  const changeLimit = useCallback((next: number) => {
-    setLimit(Math.max(1, Math.trunc(next) || 1));
-    setPage(1);
-  }, []);
-
   const rows = useMemo<MovementRow[]>(() => {
     const batchById = new Map(batches.map((batch) => [batch.id, batch]));
     const itemById = new Map(items.map((item) => [item.id, item]));
@@ -132,11 +127,7 @@ export function useMovements() {
     loading,
     error,
     reload: reloadAll,
-    page,
-    limit,
-    total,
-    totalPages,
-    goToPage,
-    changeLimit,
+    // Paginación: propagar con {...pagination} a <PaginationBar />
+    pagination,
   };
 }

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { recipesRepository } from "../../../services/recipes";
 import { itemsRepository } from "../../../services/items";
 import { fetchAllPages } from "../../../services/pagination";
+import { usePagination } from "../../../hooks/usePagination";
 import type {
   CreateRecipeInput,
   Recipe,
@@ -61,6 +62,13 @@ function errorMessage(err: unknown, fallback: string): string {
   return err instanceof Error && err.message ? err.message : fallback;
 }
 
+/** Valor `available` del listado según el filtro de disponibilidad. */
+function availableFromFilter(value: RecipeFilter): boolean | undefined {
+  if (value === "AVAILABLE") return true;
+  if (value === "UNAVAILABLE") return false;
+  return undefined;
+}
+
 /**
  * Hook reactivo que desacopla la lógica de negocio y de acceso a datos
  * para la gestión de recetas en el frontend.
@@ -79,10 +87,15 @@ export function useRecipes() {
   const [message, setMessage] = useState<string | null>(null);
   const [filters, setFilters] = useState<RecipeFilters>(INITIAL_FILTERS);
 
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState<number>(DEFAULT_RECIPES_LIMIT);
-  const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
+  const {
+    pagination,
+    page,
+    limit,
+    applyPage,
+    goToPage,
+    changeLimit,
+    resetPage,
+  } = usePagination(DEFAULT_RECIPES_LIMIT);
 
   // Cargar insumos disponibles para el selector del formulario
   const loadItems = useCallback(async () => {
@@ -104,27 +117,19 @@ export function useRecipes() {
     setLoading(true);
     setError(null);
     try {
-      const available =
-        filters.availability === "AVAILABLE"
-          ? true
-          : filters.availability === "UNAVAILABLE"
-            ? false
-            : undefined;
-
       const result = await recipesRepository.list({
-        available,
+        available: availableFromFilter(filters.availability),
         page,
         limit,
       });
       setRecipes(result.items);
-      setTotal(result.total);
-      setTotalPages(result.totalPages);
+      applyPage(result);
     } catch (err) {
       setError(errorMessage(err, "No se pudieron cargar las recetas."));
     } finally {
       setLoading(false);
     }
-  }, [filters.availability, page, limit]);
+  }, [filters.availability, page, limit, applyPage]);
 
   useEffect(() => {
     void reload();
@@ -226,26 +231,19 @@ export function useRecipes() {
     setMessage(null);
   }, []);
 
-  const updateFilters = useCallback((partial: Partial<RecipeFilters>) => {
-    setFilters((prev) => {
-      const next = { ...prev, ...partial };
-      const resetPage =
-        (partial.search !== undefined && partial.search !== prev.search) ||
-        (partial.availability !== undefined &&
-          partial.availability !== prev.availability);
-      if (resetPage) setPage(1);
-      return next;
-    });
-  }, []);
-
-  const goToPage = useCallback((next: number) => {
-    setPage(Math.max(1, Math.trunc(next) || 1));
-  }, []);
-
-  const changeLimit = useCallback((next: number) => {
-    setLimit(Math.max(1, Math.trunc(next) || 1));
-    setPage(1);
-  }, []);
+  const updateFilters = useCallback(
+    (partial: Partial<RecipeFilters>) => {
+      setFilters((prev) => {
+        const shouldResetPage =
+          (partial.search !== undefined && partial.search !== prev.search) ||
+          (partial.availability !== undefined &&
+            partial.availability !== prev.availability);
+        if (shouldResetPage) resetPage();
+        return { ...prev, ...partial };
+      });
+    },
+    [resetPage],
+  );
 
   /**
    * Búsqueda textual en memoria sobre la página actual (el backend solo
@@ -276,11 +274,7 @@ export function useRecipes() {
     reload,
     save,
     remove,
-    page,
-    limit,
-    total,
-    totalPages,
-    goToPage,
-    changeLimit,
+    // Paginación: propagar con {...pagination} a <PaginationBar />
+    pagination,
   };
 }

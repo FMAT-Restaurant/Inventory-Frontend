@@ -76,3 +76,63 @@ describe('fetchAllPages', () => {
     expect(fetcher).toHaveBeenCalledTimes(3);
   });
 });
+
+describe('buildQueryString', () => {
+  it('omite undefined, null y strings vacíos', async () => {
+    const { buildQueryString } = await import('./pagination');
+    expect(
+      buildQueryString({ q: '', page: 1, limit: undefined, x: null, ok: 2 }),
+    ).toBe('?page=1&ok=2');
+  });
+
+  it('serializa booleans como true/false', async () => {
+    const { buildQueryString } = await import('./pagination');
+    expect(buildQueryString({ includeInactive: false })).toBe(
+      '?includeInactive=false',
+    );
+  });
+});
+
+describe('buildPageQuery', () => {
+  it('combina filtros extra con page y limit acotado', async () => {
+    const { buildPageQuery } = await import('./pagination');
+    expect(
+      buildPageQuery({ page: 2, limit: 500 }, { itemId: 'abc' }),
+    ).toBe('?itemId=abc&page=2&limit=100');
+  });
+
+  it('sin paginación devuelve solo los filtros', async () => {
+    const { buildPageQuery } = await import('./pagination');
+    expect(buildPageQuery({}, { q: 'harina' })).toBe('?q=harina');
+  });
+});
+
+describe('toPage', () => {
+  it('normaliza la respuesta paginada y mapea los items', async () => {
+    const { toPage } = await import('./pagination');
+    const raw = {
+      items: [{ n: 1 }, { n: 2 }],
+      total: 7,
+      page: 2,
+      limit: 2,
+      totalPages: 4,
+    };
+    const page = toPage(raw, { page: 2, limit: 2 }, (item: { n: number }) => item.n * 10);
+    expect(page).toEqual({
+      items: [10, 20],
+      total: 7,
+      page: 2,
+      limit: 2,
+      totalPages: 4,
+    });
+  });
+
+  it('envuelve respuestas legacy de array con clamp de limit', async () => {
+    const { toPage } = await import('./pagination');
+    const page = toPage([{ n: 1 }], { page: 1, limit: 500 }, (item: { n: number }) => item.n);
+    expect(page.items).toEqual([1]);
+    expect(page.total).toBe(1);
+    expect(page.totalPages).toBe(1);
+    expect(page.limit).toBe(100);
+  });
+});

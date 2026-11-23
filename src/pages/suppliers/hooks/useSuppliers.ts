@@ -12,6 +12,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { suppliersRepository } from '../../../services/suppliers';
+import { usePagination, type PaginationBarProps } from '../../../hooks/usePagination';
 import type {
   Supplier,
   SupplierInput,
@@ -46,12 +47,7 @@ export interface UseSuppliersResult {
   reload: () => Promise<void>;
   save: (input: SaveSupplierInput) => Promise<Supplier>;
   remove: (id: string) => Promise<void>;
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-  goToPage: (next: number) => void;
-  changeLimit: (next: number) => void;
+  pagination: PaginationBarProps;
 }
 
 /**
@@ -92,10 +88,15 @@ export function useSuppliers(): UseSuppliersResult {
   const [message, setMessage] = useState<string | null>(null);
   const [filters, setFilters] = useState<SupplierFilters>(INITIAL_FILTERS);
 
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState<number>(DEFAULT_SUPPLIERS_LIMIT);
-  const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
+  const {
+    pagination,
+    page,
+    limit,
+    applyPage,
+    goToPage,
+    changeLimit,
+    resetPage,
+  } = usePagination(DEFAULT_SUPPLIERS_LIMIT);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -107,14 +108,13 @@ export function useSuppliers(): UseSuppliersResult {
         limit,
       });
       setSuppliers(result.items);
-      setTotal(result.total);
-      setTotalPages(result.totalPages);
+      applyPage(result);
     } catch (err) {
       setError(errorMessage(err, 'No se pudieron cargar los proveedores.'));
     } finally {
       setLoading(false);
     }
-  }, [filters.includeInactive, page, limit]);
+  }, [filters.includeInactive, page, limit, applyPage]);
 
   useEffect(() => {
     void reload();
@@ -183,26 +183,19 @@ export function useSuppliers(): UseSuppliersResult {
     [suppliers, reload],
   );
 
-  const updateFilters = useCallback((partial: Partial<SupplierFilters>) => {
-    setFilters((prev) => {
-      const next = { ...prev, ...partial };
-      const resetPage =
-        (partial.search !== undefined && partial.search !== prev.search) ||
-        (partial.includeInactive !== undefined &&
-          partial.includeInactive !== prev.includeInactive);
-      if (resetPage) setPage(1);
-      return next;
-    });
-  }, []);
-
-  const goToPage = useCallback((next: number) => {
-    setPage(Math.max(1, Math.trunc(next) || 1));
-  }, []);
-
-  const changeLimit = useCallback((next: number) => {
-    setLimit(Math.max(1, Math.trunc(next) || 1));
-    setPage(1);
-  }, []);
+  const updateFilters = useCallback(
+    (partial: Partial<SupplierFilters>) => {
+      setFilters((prev) => {
+        const shouldResetPage =
+          (partial.search !== undefined && partial.search !== prev.search) ||
+          (partial.includeInactive !== undefined &&
+            partial.includeInactive !== prev.includeInactive);
+        if (shouldResetPage) resetPage();
+        return { ...prev, ...partial };
+      });
+    },
+    [resetPage],
+  );
 
   /**
    * El backend no expone búsqueda textual para proveedores, así que el
@@ -232,11 +225,6 @@ export function useSuppliers(): UseSuppliersResult {
     reload,
     save,
     remove,
-    page,
-    limit,
-    total,
-    totalPages,
-    goToPage,
-    changeLimit,
+    pagination,
   };
 }

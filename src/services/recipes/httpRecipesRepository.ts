@@ -11,7 +11,7 @@
 
 import { ENV } from "../../config/env";
 import { HttpError, requestWithStatus } from "../http/client";
-import { buildQueryString, clampLimit, toPaginated } from "../pagination";
+import { buildPageQuery, toPage } from "../pagination";
 import type {
   CreateRecipeInput,
   QueryRecipesParams,
@@ -106,20 +106,10 @@ async function request<T>(
 
 export const httpRecipesRepository: RecipesRepository = {
   async list(params: QueryRecipesParams = {}) {
-    const query = buildQueryString({
-      available:
-        params.available === undefined ? undefined : String(params.available),
-      page: params.page,
-      limit: clampLimit(params.limit),
-    });
+    const query = buildPageQuery(params, { available: params.available });
 
     const { data } = await request<unknown>(`/recipes${query}`);
-    const page = toPaginated<RawRecipe>(
-      data,
-      params.page,
-      clampLimit(params.limit),
-    );
-    return { ...page, items: (page.items ?? []).map(normalizeRecipe) };
+    return toPage<RawRecipe, Recipe>(data, params, normalizeRecipe);
   },
 
   async getByIdOrPlateId(idOrPlateId: string): Promise<Recipe | null> {

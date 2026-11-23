@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useSuppliers } from './hooks/useSuppliers.js';
-import { PaginationBar } from '../../components/ui/PaginationBar.jsx';
+import { PaginatedSection } from '../../components/ui/PaginatedSection.jsx';
 import { SuppliersToolbar } from './components/SuppliersToolbar.jsx';
 import { SupplierCard } from './components/SupplierCard.jsx';
 import { SupplierCostHistoryModal } from './components/SupplierCostHistoryModal.jsx';
@@ -21,12 +21,7 @@ export function SuppliersPage() {
     clearMessage,
     save,
     remove,
-    page,
-    limit,
-    total,
-    totalPages,
-    goToPage,
-    changeLimit,
+    pagination,
   } = useSuppliers();
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -132,51 +127,30 @@ export function SuppliersPage() {
         disabled={loading}
       />
 
-      {loading && filteredSuppliers.length === 0 ? (
-        <SuppliersEmptyState loading />
-      ) : total === 0 ? (
-        <SuppliersEmptyState />
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {filteredSuppliers.length === 0 ? (
-            <div
-              style={{
-                padding: '24px',
-                textAlign: 'center',
-                color: 'var(--color-muted)',
-                fontSize: 'var(--small-size)',
-              }}
-            >
-              Ningún proveedor de esta página coincide con la búsqueda. Prueba
-              otra página o ajusta el término.
-            </div>
-          ) : (
-            <div className="grid-responsive">
-              {filteredSuppliers.map((supplier) => (
-                <SupplierCard
-                  key={supplier.id}
-                  supplier={supplier}
-                  onEdit={() => openEdit(supplier)}
-                  onDelete={() => requestDelete(supplier)}
-                  onCostHistory={() => setHistorySupplier(supplier)}
-                  disabled={saving}
-                />
-              ))}
-            </div>
-          )}
-
-          <PaginationBar
-            page={page}
-            limit={limit}
-            total={total}
-            totalPages={totalPages}
-            onPageChange={goToPage}
-            onLimitChange={changeLimit}
-            disabled={loading || saving}
-            label="proveedores"
-          />
+      <PaginatedSection
+        loading={loading}
+        total={pagination.total}
+        filteredCount={filteredSuppliers.length}
+        emptyState={<SuppliersEmptyState />}
+        loadingState={<SuppliersEmptyState loading />}
+        noMatchesMessage="Ningún proveedor de esta página coincide con la búsqueda. Prueba otra página o ajusta el término."
+        pagination={pagination}
+        paginationDisabled={loading || saving}
+        paginationLabel="proveedores"
+      >
+        <div className="grid-responsive">
+          {filteredSuppliers.map((supplier) => (
+            <SupplierCard
+              key={supplier.id}
+              supplier={supplier}
+              onEdit={() => openEdit(supplier)}
+              onDelete={() => requestDelete(supplier)}
+              onCostHistory={() => setHistorySupplier(supplier)}
+              disabled={saving}
+            />
+          ))}
         </div>
-      )}
+      </PaginatedSection>
 
       <SupplierFormModal
         isOpen={modalOpen}

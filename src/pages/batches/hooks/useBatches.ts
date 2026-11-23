@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { itemsRepository } from "../../../services/items";
 import { fetchAllPages } from "../../../services/pagination";
+import { usePagination } from "../../../hooks/usePagination";
 import { isActiveSupplier } from "../../../services/suppliers/labels";
 import type { Item, Supplier } from "../../../services/items";
 import { batchesRepository } from "../../../services/batches";
@@ -80,11 +81,16 @@ export function useBatches() {
   const [message, setMessage] = useState<string | null>(null);
   const [filters, setFilters] = useState<BatchFilters>(INITIAL_FILTERS);
 
-  // Estado de paginación (sobre items)
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState<number>(DEFAULT_BATCHES_ITEMS_LIMIT);
-  const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
+  // Estado de paginación (sobre items).
+  const {
+    pagination,
+    page,
+    limit,
+    applyPage,
+    goToPage,
+    changeLimit,
+    resetPage,
+  } = usePagination(DEFAULT_BATCHES_ITEMS_LIMIT);
 
   // Página de insumos (depende de búsqueda + page/limit).
   const reloadItems = useCallback(async () => {
@@ -98,8 +104,7 @@ export function useBatches() {
         limit,
       });
       setItems(itemPage.items);
-      setTotal(itemPage.total);
-      setTotalPages(itemPage.totalPages);
+      applyPage(itemPage);
     } catch (err) {
       setError(
         errorMessage(err, "No se pudieron cargar los insumos y sus lotes."),
@@ -107,7 +112,7 @@ export function useBatches() {
     } finally {
       setLoading(false);
     }
-  }, [filters.search, page, limit]);
+  }, [filters.search, page, limit, applyPage]);
 
   // Catálogo de lotes + proveedores: se carga al montar y cuando se invalida.
   const reloadCatalog = useCallback(async () => {
@@ -227,24 +232,17 @@ export function useBatches() {
     setMessage(null);
   }, []);
 
-  const updateFilters = useCallback((partial: Partial<BatchFilters>) => {
-    setFilters((prev) => {
-      const next = { ...prev, ...partial };
-      if (partial.search !== undefined && partial.search !== prev.search) {
-        setPage(1);
-      }
-      return next;
-    });
-  }, []);
-
-  const goToPage = useCallback((next: number) => {
-    setPage(Math.max(1, Math.trunc(next) || 1));
-  }, []);
-
-  const changeLimit = useCallback((next: number) => {
-    setLimit(Math.max(1, Math.trunc(next) || 1));
-    setPage(1);
-  }, []);
+  const updateFilters = useCallback(
+    (partial: Partial<BatchFilters>) => {
+      setFilters((prev) => {
+        if (partial.search !== undefined && partial.search !== prev.search) {
+          resetPage();
+        }
+        return { ...prev, ...partial };
+      });
+    },
+    [resetPage],
+  );
 
   /** El filtro por status se mantiene en memoria sobre la página actual. */
   const filteredItems = useMemo(() => {
@@ -294,12 +292,7 @@ export function useBatches() {
     createBatch,
     updateBatch,
     removeBatch,
-    // Paginación
-    page,
-    limit,
-    total,
-    totalPages,
-    goToPage,
-    changeLimit,
+    // Paginación: propagar con {...pagination} a <PaginationBar />
+    pagination,
   };
 }

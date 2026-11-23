@@ -15,7 +15,7 @@
  */
 
 import { request } from "../http/client";
-import { buildQueryString, clampLimit, toPaginated } from "../pagination";
+import { buildPageQuery, toPage } from "../pagination";
 import type {
   Item,
   ItemInput,
@@ -70,21 +70,9 @@ function normalizeItem(item: Item & { _id?: string }): Item {
 
 export const httpItemsRepository: ItemsRepository = {
   async list(params: ListItemsParams = {}) {
-    const query = buildQueryString({
-      q: params.q?.trim() || undefined,
-      page: params.page,
-      limit: clampLimit(params.limit),
-    });
+    const query = buildPageQuery(params, { q: params.q?.trim() || undefined });
     const raw = await request<unknown>(`/items${query}`);
-    const page = toPaginated<Item & { _id?: string }>(
-      raw,
-      params.page,
-      clampLimit(params.limit),
-    );
-    return {
-      ...page,
-      items: page.items.map(normalizeItem),
-    };
+    return toPage<Item & { _id?: string }, Item>(raw, params, normalizeItem);
   },
 
   async getById(id) {
@@ -114,26 +102,14 @@ export const httpItemsRepository: ItemsRepository = {
     await request<void>(`/items/${id}`, { method: "DELETE" });
   },
 
-  async listSuppliers(params: { page?: number; limit?: number } = {}) {
+   async listSuppliers(params: { page?: number; limit?: number } = {}) {
     // Se piden también los dados de baja para poder mostrar el nombre de
     // los que siguen asignados a lotes o insumos.
-    const query = buildQueryString({
-      includeInactive: "true",
-      page: params.page,
-      limit: clampLimit(params.limit),
-    });
+    const query = buildPageQuery(params, { includeInactive: "true" });
     const raw = await request<unknown>(`/suppliers${query}`);
-    const page = toPaginated<Supplier & { _id?: string }>(
-      raw,
-      params.page,
-      clampLimit(params.limit),
-    );
-    return {
-      ...page,
-      items: page.items.map((supplier) => ({
-        ...supplier,
-        id: supplier.id || supplier._id || "",
-      })),
-    };
+    return toPage<Supplier & { _id?: string }, Supplier>(raw, params, (supplier) => ({
+      ...supplier,
+      id: supplier.id || supplier._id || "",
+    }));
   },
 };

@@ -2,7 +2,7 @@
  * Helpers compartidos para manejar respuestas paginadas del backend.
  */
 
-import type { PaginatedResponse } from "./types";
+import type { PaginatedResponse, PaginationParams } from "./types";
 
 /**
  * Límite máximo de `limit` aceptado por el backend en los endpoints
@@ -55,11 +55,14 @@ export function toPaginated<T>(
   return { items, total, page, limit, totalPages };
 }
 
+/** Valores que un query param puede tomar. Evita `[object Object]` al serializar. */
+export type QueryValue = string | number | boolean | undefined | null;
+
 /**
  * Construye un query string a partir de un objeto, omitiendo valores
  * undefined, null o strings vacíos.
  */
-export function buildQueryString(params: Record<string, unknown>): string {
+export function buildQueryString(params: Record<string, QueryValue>): string {
   const search = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
     if (value === undefined || value === null || value === "") continue;
@@ -68,6 +71,35 @@ export function buildQueryString(params: Record<string, unknown>): string {
   const qs = search.toString();
   return qs ? `?${qs}` : "";
 }
+
+/**
+ * Query de listado paginado: filtros extras + `page`/`limit` acotados
+ * al máximo del backend. Uso: `request(`${path}${buildPageQuery(...)}`)`.
+ */
+export function buildPageQuery(
+  params: PaginationParams & Record<string, QueryValue>,
+  extra: Record<string, QueryValue> = {},
+): string {
+  return buildQueryString({
+    ...extra,
+    page: params.page,
+    limit: clampLimit(params.limit),
+  });
+}
+
+/**
+ * Normaliza una respuesta paginada cruda del backend y mapea cada
+ * elemento al modelo de la UI.
+ */
+export function toPage<Raw, T>(
+  raw: unknown,
+  params: PaginationParams,
+  map: (item: Raw) => T,
+): PaginatedResponse<T> {
+  const page = toPaginated<Raw>(raw, params.page, clampLimit(params.limit));
+  return { ...page, items: page.items.map(map) };
+}
+
 
 /**
  * Recorre todas las páginas de un endpoint paginado respetando el límite

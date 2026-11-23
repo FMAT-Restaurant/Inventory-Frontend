@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useItems } from "./hooks/useItems.js";
 import { useColumnCount } from "./hooks/useColumnCount.js";
-import { PaginationBar } from "../../components/ui/PaginationBar.jsx";
+import { PaginatedSection } from "../../components/ui/PaginatedSection.jsx";
 import { ItemsToolbar } from "./components/ItemsToolbar.jsx";
 import { ItemCard } from "./components/ItemCard.jsx";
 import { ItemsEmptyState } from "./components/ItemsEmptyState.jsx";
@@ -23,12 +23,7 @@ export function ItemsPage() {
     clearMessage,
     save,
     remove,
-    page,
-    limit,
-    total,
-    totalPages,
-    goToPage,
-    changeLimit,
+    pagination,
   } = useItems();
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -148,82 +143,55 @@ export function ItemsPage() {
         disabled={loading}
       />
 
-      {loading && filteredItems.length === 0 ? (
-        <ItemsEmptyState loading />
-      ) : total === 0 ? (
-        <ItemsEmptyState />
-      ) : (
+      <PaginatedSection
+        loading={loading}
+        total={pagination.total}
+        filteredCount={filteredItems.length}
+        emptyState={<ItemsEmptyState />}
+        loadingState={<ItemsEmptyState loading />}
+        noMatchesMessage="Ningún insumo de esta página coincide con la categoría seleccionada. Prueba otra página o cambia el filtro."
+        pagination={pagination}
+        paginationDisabled={loading || saving}
+        paginationLabel="insumos"
+      >
         <div
           style={{
             display: "flex",
-            flexDirection: "column",
+            alignItems: "flex-start",
             gap: "20px",
           }}
         >
-          {filteredItems.length === 0 ? (
+          {columnas.map((columna, indiceColumna) => (
             <div
+              key={indiceColumna}
               style={{
-                padding: "24px",
-                textAlign: "center",
-                color: "var(--color-muted)",
-                fontSize: "var(--small-size)",
-              }}
-            >
-              Ningún insumo de esta página coincide con la categoría
-              seleccionada. Prueba otra página o cambia el filtro.
-            </div>
-          ) : (
-            <div
-              style={{
+                flex: "1 1 0",
+                minWidth: 0,
                 display: "flex",
-                alignItems: "flex-start",
+                flexDirection: "column",
                 gap: "20px",
               }}
             >
-              {columnas.map((columna, indiceColumna) => (
-                <div
-                  key={indiceColumna}
-                  style={{
-                    flex: "1 1 0",
-                    minWidth: 0,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "20px",
-                  }}
-                >
-                  {columna.map((item) => (
-                    <ItemCard
-                      key={item.id}
-                      item={item}
-                      supplier={
-                        item.supplierSugested ||
-                        suppliersById.get(item.supplierIdSugested) ||
-                        null
-                      }
-                      expanded={Boolean(expandedItems[item.id])}
-                      onToggleExpand={() => toggleItem(item.id)}
-                      onEdit={() => openEdit(item)}
-                      onDelete={() => confirmDelete(item)}
-                      disabled={saving}
-                    />
-                  ))}
-                </div>
+              {columna.map((item) => (
+                <ItemCard
+                  key={item.id}
+                  item={item}
+                  supplier={
+                    item.supplierSugested ||
+                    suppliersById.get(item.supplierIdSugested) ||
+                    null
+                  }
+                  expanded={Boolean(expandedItems[item.id])}
+                  onToggleExpand={() => toggleItem(item.id)}
+                  onEdit={() => openEdit(item)}
+                  onDelete={() => confirmDelete(item)}
+                  disabled={saving}
+                />
               ))}
             </div>
-          )}
-
-          <PaginationBar
-            page={page}
-            limit={limit}
-            total={total}
-            totalPages={totalPages}
-            onPageChange={goToPage}
-            onLimitChange={changeLimit}
-            disabled={loading || saving}
-            label="insumos"
-          />
+          ))}
         </div>
-      )}
+      </PaginatedSection>
 
       <ItemFormModal
         isOpen={modalOpen}

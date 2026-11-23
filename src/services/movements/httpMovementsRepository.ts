@@ -8,7 +8,7 @@
  */
 
 import { request } from "../http/client";
-import { clampLimit, toPaginated } from "../pagination";
+import { buildPageQuery, toPage } from "../pagination";
 import type {
   MovementFilters,
   MovementType,
@@ -55,36 +55,27 @@ function normalizeMovement(raw: RawMovement): StockMovement {
   };
 }
 
-function buildQuery(filters: MovementFilters): string {
-  const params = new URLSearchParams();
-
-  if (filters.batchId) params.set("batchId", filters.batchId);
-  if (filters.movementType) params.set("movementType", filters.movementType);
-  if (filters.referenceId) params.set("referenceId", filters.referenceId);
-  if (filters.from) params.set("from", filters.from);
-  if (filters.to) params.set("to", filters.to);
-  if (filters.page) params.set("page", String(filters.page));
-  if (filters.limit) params.set("limit", String(clampLimit(filters.limit)));
-
-  const query = params.toString();
-  return query ? `?${query}` : "";
-}
-
 export const httpMovementsRepository: MovementsRepository = {
   async list(filters: MovementFilters = {}) {
-    const raw = await request<unknown>(`/movements${buildQuery(filters)}`);
-    const page = toPaginated<RawMovement>(
+    const query = buildPageQuery(filters, {
+      batchId: filters.batchId,
+      movementType: filters.movementType,
+      referenceId: filters.referenceId,
+      from: filters.from,
+      to: filters.to,
+    });
+    const raw = await request<unknown>(`/movements${query}`);
+    const page = toPage<RawMovement, StockMovement>(
       raw,
-      filters.page,
-      clampLimit(filters.limit),
+      filters,
+      normalizeMovement,
     );
-    const items = page.items.map(normalizeMovement);
     // El backend ya ordena por fecha desc; se mantiene el sort como
     // salvaguarda frente a respuestas desordenadas.
-    items.sort(
+    page.items.sort(
       (a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
-    return { ...page, items };
+    return page;
   },
 };
