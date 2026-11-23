@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { recipesRepository } from "../../../services/recipes";
 import { itemsRepository } from "../../../services/items";
+import { fetchAllPages } from "../../../services/pagination";
 import type {
   CreateRecipeInput,
   Recipe,
@@ -18,6 +19,9 @@ const INITIAL_FILTERS: RecipeFilters = {
   search: "",
   availability: "ALL",
 };
+
+/** Tamaño de página por defecto para recetas. */
+export const DEFAULT_RECIPES_LIMIT = 20;
 
 export function validateRecipeInput(input: CreateRecipeInput): string | null {
   if (!input.plateId || !input.plateId.trim()) {
@@ -60,12 +64,14 @@ function errorMessage(err: unknown, fallback: string): string {
 /**
  * Hook reactivo que desacopla la lógica de negocio y de acceso a datos
  * para la gestión de recetas en el frontend.
+ *
+ * Paginación server-side sobre el listado de recetas. El filtro
+ * `available` viaja al backend; `search` se aplica en memoria sobre la
+ * página actual.
  */
 export function useRecipes() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [availableItems, setAvailableItems] = useState<
-    Item[]
-  >([]);
+  const [availableItems, setAvailableItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingItems, setLoadingItems] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -73,12 +79,19 @@ export function useRecipes() {
   const [message, setMessage] = useState<string | null>(null);
   const [filters, setFilters] = useState<RecipeFilters>(INITIAL_FILTERS);
 
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState<number>(DEFAULT_RECIPES_LIMIT);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+
   // Cargar insumos disponibles para el selector del formulario
   const loadItems = useCallback(async () => {
     setLoadingItems(true);
     try {
-      const items = await itemsRepository.list();
-      setAvailableItems(items);
+      const result = await fetchAllPages((p, l) =>
+        itemsRepository.list({ page: p, limit: l }),
+      );
+      setAvailableItems(result);
     } catch (err) {
       console.error("Error al cargar catálogo de insumos:", err);
     } finally {
@@ -86,24 +99,40 @@ export function useRecipes() {
     }
   }, []);
 
-  // Cargar recetas del backend
+  // Cargar recetas del backend (paginadas)
   const reload = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const items = await recipesRepository.list();
-      setRecipes(items);
+      const available =
+        filters.availability === "AVAILABLE"
+          ? true
+          : filters.availability === "UNAVAILABLE"
+            ? false
+            : undefined;
+
+      const result = await recipesRepository.list({
+        available,
+        page,
+        limit,
+      });
+      setRecipes(result.items);
+      setTotal(result.total);
+      setTotalPages(result.totalPages);
     } catch (err) {
       setError(errorMessage(err, "No se pudieron cargar las recetas."));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [filters.availability, page, limit]);
 
   useEffect(() => {
     void reload();
+  }, [reload]);
+
+  useEffect(() => {
     void loadItems();
-  }, [reload, loadItems]);
+  }, [loadItems]);
 
   // Suscripción reactiva si el repositorio la soporta
   useEffect(() => {
@@ -198,29 +227,39 @@ export function useRecipes() {
   }, []);
 
   const updateFilters = useCallback((partial: Partial<RecipeFilters>) => {
-    setFilters((prev) => ({ ...prev, ...partial }));
+    setFilters((prev) => {
+      const next = { ...prev, ...partial };
+      const resetPage =
+        (partial.search !== undefined && partial.search !== prev.search) ||
+        (partial.availability !== undefined &&
+          partial.availability !== prev.availability);
+      if (resetPage) setPage(1);
+      return next;
+    });
   }, []);
 
-  // Filtrado reactivo en memoria (búsqueda y disponibilidad)
+  const goToPage = useCallback((next: number) => {
+    setPage(Math.max(1, Math.trunc(next) || 1));
+  }, []);
+
+  const changeLimit = useCallback((next: number) => {
+    setLimit(Math.max(1, Math.trunc(next) || 1));
+    setPage(1);
+  }, []);
+
+  /**
+   * Búsqueda textual en memoria sobre la página actual (el backend solo
+   * expone `available` como filtro). La paginación ya filtró disponibilidad.
+   */
   const filteredRecipes = useMemo(() => {
     const search = filters.search.trim().toLowerCase();
+    if (!search) return recipes;
     return recipes.filter((recipe) => {
       const name = (recipe.name || "").toLowerCase();
       const plateId = (recipe.plateId || "").toLowerCase();
-      const matchesSearch =
-        search === "" || name.includes(search) || plateId.includes(search);
-
-      if (!matchesSearch) return false;
-
-      if (filters.availability === "AVAILABLE") {
-        return recipe.isAvailable === true;
-      }
-      if (filters.availability === "UNAVAILABLE") {
-        return recipe.isAvailable === false;
-      }
-      return true;
+      return name.includes(search) || plateId.includes(search);
     });
-  }, [recipes, filters]);
+  }, [recipes, filters.search]);
 
   return {
     recipes,
@@ -237,5 +276,11 @@ export function useRecipes() {
     reload,
     save,
     remove,
+    page,
+    limit,
+    total,
+    totalPages,
+    goToPage,
+    changeLimit,
   };
 }

@@ -72,9 +72,9 @@ describe('mockMovementsRepository', () => {
         snapshot([COMPRA_MOVEMENT]),
       );
 
-      const result = await mockMovementsRepository.list();
+      const page = await mockMovementsRepository.list();
 
-      expect(result).toEqual([
+      expect(page.items).toEqual([
         {
           id: 'mov-compra-in-0',
           batchId: 'lot-1',
@@ -93,10 +93,10 @@ describe('mockMovementsRepository', () => {
         snapshot([CONSUMO_MOVEMENT]),
       );
 
-      const result = await mockMovementsRepository.list();
+      const page = await mockMovementsRepository.list();
 
-      expect(result).toHaveLength(2);
-      expect(result[0]).toMatchObject({
+      expect(page.items).toHaveLength(2);
+      expect(page.items[0]).toMatchObject({
         id: 'mov-consumo-out-0-0',
         batchId: 'lot-1',
         movementType: 'out',
@@ -104,7 +104,7 @@ describe('mockMovementsRepository', () => {
         referenceId: 'order-9',
         reason: 'Servicio de comida',
       });
-      expect(result[1]).toMatchObject({
+      expect(page.items[1]).toMatchObject({
         batchId: 'lot-2',
         movementType: 'out',
         quantity: 1,
@@ -116,9 +116,9 @@ describe('mockMovementsRepository', () => {
         snapshot([MERMA_MOVEMENT]),
       );
 
-      const result = await mockMovementsRepository.list();
+      const page = await mockMovementsRepository.list();
 
-      expect(result).toEqual([
+      expect(page.items).toEqual([
         expect.objectContaining({
           id: 'mov-merma-waste-lot-2',
           batchId: 'lot-2',
@@ -137,9 +137,9 @@ describe('mockMovementsRepository', () => {
         ]),
       );
 
-      const result = await mockMovementsRepository.list();
+      const page = await mockMovementsRepository.list();
 
-      expect(result).toEqual([]);
+      expect(page.items).toEqual([]);
     });
 
     it('ordena los movimientos por fecha descendente', async () => {
@@ -147,9 +147,9 @@ describe('mockMovementsRepository', () => {
         snapshot([COMPRA_MOVEMENT, CONSUMO_MOVEMENT, MERMA_MOVEMENT]),
       );
 
-      const result = await mockMovementsRepository.list();
+      const page = await mockMovementsRepository.list();
 
-      expect(result.map((m) => m.id)).toEqual([
+      expect(page.items.map((m) => m.id)).toEqual([
         'mov-merma-waste-lot-2',
         'mov-consumo-out-0-0',
         'mov-consumo-out-0-1',
@@ -164,14 +164,14 @@ describe('mockMovementsRepository', () => {
         snapshot([COMPRA_MOVEMENT, CONSUMO_MOVEMENT, MERMA_MOVEMENT]),
       );
 
-      const result = await mockMovementsRepository.list({
+      const page = await mockMovementsRepository.list({
         batchId: 'lot-1',
         movementType: 'out',
         referenceId: 'order-9',
       });
 
-      expect(result).toHaveLength(1);
-      expect(result[0]).toMatchObject({
+      expect(page.items).toHaveLength(1);
+      expect(page.items[0]).toMatchObject({
         batchId: 'lot-1',
         movementType: 'out',
         referenceId: 'order-9',
@@ -183,24 +183,32 @@ describe('mockMovementsRepository', () => {
         snapshot([COMPRA_MOVEMENT, CONSUMO_MOVEMENT, MERMA_MOVEMENT]),
       );
 
-      const result = await mockMovementsRepository.list({
+      const page = await mockMovementsRepository.list({
         from: '2026-11-02T00:00:00.000Z',
         to: '2026-11-02T23:59:59.999Z',
       });
 
-      expect(result).toHaveLength(2);
-      expect(result.every((m) => m.id.startsWith('mov-consumo'))).toBe(true);
+      expect(page.items).toHaveLength(2);
+      expect(page.items.every((m) => m.id.startsWith('mov-consumo'))).toBe(true);
     });
 
-    it('aplica el límite después de ordenar', async () => {
+    it('aplica paginación en memoria con page/limit', async () => {
       vi.spyOn(mockService, 'getSnapshot').mockReturnValue(
         snapshot([COMPRA_MOVEMENT, CONSUMO_MOVEMENT, MERMA_MOVEMENT]),
       );
 
-      const result = await mockMovementsRepository.list({ limit: 1 });
+      const page = await mockMovementsRepository.list({ page: 1, limit: 2 });
 
-      expect(result).toHaveLength(1);
-      expect(result[0].id).toBe('mov-merma-waste-lot-2');
+      expect(page.items).toHaveLength(2);
+      expect(page.total).toBe(4);
+      expect(page.totalPages).toBe(2);
+      expect(page.items[0].id).toBe('mov-merma-waste-lot-2');
+
+      const second = await mockMovementsRepository.list({ page: 2, limit: 2 });
+      expect(second.items.map((m) => m.id)).toEqual([
+        'mov-consumo-out-0-1',
+        'mov-compra-in-0',
+      ]);
     });
   });
 

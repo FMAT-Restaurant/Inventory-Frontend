@@ -50,10 +50,21 @@ const SUPPLIER: Supplier = {
   phone: '+52 999 101 2020',
 };
 
+/** Envuelve una lista en el formato PaginatedResponse<T> que espera el hook. */
+function pageOf<T>(items: T[]) {
+  return {
+    items,
+    total: items.length,
+    page: 1,
+    limit: items.length || 20,
+    totalPages: 1,
+  };
+}
+
 describe('useSuppliers', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    repo.list.mockResolvedValue([SUPPLIER]);
+    repo.list.mockResolvedValue(pageOf([SUPPLIER]));
   });
 
   afterEach(() => {
@@ -224,7 +235,7 @@ describe('useSuppliers', () => {
     };
 
     beforeEach(() => {
-      repo.list.mockResolvedValue([SUPPLIER_A, SUPPLIER_B]);
+      repo.list.mockResolvedValue(pageOf([SUPPLIER_A, SUPPLIER_B]));
     });
 
     it('sin búsqueda devuelve todos los proveedores', async () => {

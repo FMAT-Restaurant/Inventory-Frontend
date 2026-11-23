@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { itemsRepository } from "../../../services/items";
+import { fetchAllPages } from "../../../services/pagination";
 import { isActiveSupplier } from "../../../services/suppliers/labels";
 import type { Item, ItemInput, Supplier } from "../../../services/items";
 
@@ -12,6 +13,9 @@ const INITIAL_FILTERS: ItemFilters = {
   search: "",
   category: "TODAS",
 };
+
+/** Tamaño de página por defecto para el listado de insumos. */
+export const DEFAULT_ITEMS_LIMIT = 24;
 
 export function validateItemInput(input: ItemInput): string | null {
   if (!input.sku || !input.sku.trim()) {
@@ -39,10 +43,14 @@ function errorMessage(err: unknown, fallback: string): string {
 /**
  * Hook que encapsula toda la lógica de negocio y el acceso a datos
  * de la sección de insumos. La vista solo consume su resultado.
+ *
+ * Paginación server-side: `q` y `page`/`limit` viajan al backend.
+ * El filtro por categoría se aplica en memoria sobre la página actual
+ * (el backend solo expone búsqueda textual `q`).
  */
 export function useItems() {
   const [items, setItems] = useState<Item[]>([]);
-  // Todos los proveedores, incluidos los dados de baja.
+  // Todos los proveedores, incluidos los dados de baja (cache para lookup).
   const [allSuppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -50,28 +58,60 @@ export function useItems() {
   const [message, setMessage] = useState<string | null>(null);
   const [filters, setFilters] = useState<ItemFilters>(INITIAL_FILTERS);
 
-  const reload = useCallback(async () => {
+  // Estado de paginación
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState<number>(DEFAULT_ITEMS_LIMIT);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+
+  // Página de insumos (depende de búsqueda + page/limit).
+  const reloadItems = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [items, supplierList] = await Promise.all([
-        itemsRepository.list(),
-        itemsRepository.listSuppliers(),
-      ]);
-      setItems(items);
-      console.log("Insumos cargados:", items);
-      console.log("Proveedores cargados:", supplierList);
-      setSuppliers(supplierList);
+      const search = filters.search.trim();
+      const pageData = await itemsRepository.list({
+        q: search || undefined,
+        page,
+        limit,
+      });
+      setItems(pageData.items);
+      setTotal(pageData.total);
+      setTotalPages(pageData.totalPages);
     } catch (err) {
       setError(errorMessage(err, "No se pudieron cargar los insumos."));
     } finally {
       setLoading(false);
     }
+  }, [filters.search, page, limit]);
+
+  // Catálogo de proveedores: se carga al montar y cuando se invalida.
+  // `fetchAllPages` respeta el límite de 100 del backend trayendo todas
+  // las páginas necesarias.
+  const reloadSuppliers = useCallback(async () => {
+    try {
+      const supplierList = await fetchAllPages((p, l) =>
+        itemsRepository.listSuppliers({ page: p, limit: l }),
+      );
+      setSuppliers(supplierList);
+    } catch (err) {
+      // Un fallo del catálogo no rompe la lista de insumos.
+      console.error("No se pudieron cargar los proveedores:", err);
+    }
   }, []);
 
+  // Recarga completa (tras guardar/eliminar).
+  const reload = useCallback(async () => {
+    await Promise.all([reloadItems(), reloadSuppliers()]);
+  }, [reloadItems, reloadSuppliers]);
+
   useEffect(() => {
-    void reload();
-  }, [reload]);
+    void reloadItems();
+  }, [reloadItems]);
+
+  useEffect(() => {
+    void reloadSuppliers();
+  }, [reloadSuppliers]);
 
   useEffect(() => {
     if (!itemsRepository.subscribe) return;
@@ -137,10 +177,46 @@ export function useItems() {
     setMessage(null);
   }, []);
 
+  /**
+   * Actualiza filtros de búsqueda/categoría. Cambiar la búsqueda resetea
+   * la página a 1 para no quedarse fuera de rango.
+   */
   const updateFilters = useCallback((partial: Partial<ItemFilters>) => {
-    setFilters((prev) => ({ ...prev, ...partial }));
+    setFilters((prev) => {
+      const next = { ...prev, ...partial };
+      const searchChanged =
+        partial.search !== undefined && partial.search !== prev.search;
+      if (searchChanged) {
+        // Se resetea page en un set independiente para evitar loop.
+        setPage(1);
+      }
+      return next;
+    });
   }, []);
 
+  const goToPage = useCallback((next: number) => {
+    setPage(Math.max(1, Math.trunc(next) || 1));
+  }, []);
+
+  const changeLimit = useCallback((next: number) => {
+    setLimit(Math.max(1, Math.trunc(next) || 1));
+    setPage(1);
+  }, []);
+
+  /**
+   * El backend solo expone búsqueda textual `q`. El filtro por categoría
+   * se aplica sobre la página actual.
+   */
+  const filteredItems = useMemo(() => {
+    if (filters.category === "TODAS") return items;
+    return items.filter((item) => item.category === filters.category);
+  }, [items, filters.category]);
+
+  /**
+   * Categorías visibles: se derivan de los proveedores cargados y de los
+   * insumos de la página actual. Cuando el backend exponga un endpoint de
+   * categorías se puede reemplazar por esa fuente.
+   */
   const categories = useMemo(() => {
     const unique = Array.from(
       new Set(
@@ -152,26 +228,6 @@ export function useItems() {
 
     return ["TODAS", ...unique];
   }, [items]);
-
-  const filteredItems = useMemo(() => {
-    const search = filters.search.trim().toLowerCase();
-    return items.filter((item) => {
-      const name = (item.name || "").toLowerCase();
-      const category = (item.category || "").toLowerCase();
-      const sku = (item.sku || "").toLowerCase();
-      const description = (item.description || "").toLowerCase();
-      const matchesSearch =
-        search === "" ||
-        name.includes(search) ||
-        category.includes(search) ||
-        sku.includes(search) ||
-        description.includes(search);
-
-      if (!matchesSearch) return false;
-      if (filters.category === "TODAS") return true;
-      return item.category === filters.category;
-    });
-  }, [items, filters]);
 
   // Solo los activos pueden asignarse a un lote o insumo nuevo.
   const suppliers = useMemo(
@@ -195,5 +251,12 @@ export function useItems() {
     reload,
     save,
     remove,
+    // Paginación
+    page,
+    limit,
+    total,
+    totalPages,
+    goToPage,
+    changeLimit,
   };
 }

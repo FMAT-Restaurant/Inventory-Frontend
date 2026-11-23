@@ -8,6 +8,7 @@
  */
 
 import { request } from "../http/client";
+import { clampLimit, toPaginated } from "../pagination";
 import type {
   MovementFilters,
   MovementType,
@@ -62,7 +63,8 @@ function buildQuery(filters: MovementFilters): string {
   if (filters.referenceId) params.set("referenceId", filters.referenceId);
   if (filters.from) params.set("from", filters.from);
   if (filters.to) params.set("to", filters.to);
-  if (filters.limit) params.set("limit", String(filters.limit));
+  if (filters.page) params.set("page", String(filters.page));
+  if (filters.limit) params.set("limit", String(clampLimit(filters.limit)));
 
   const query = params.toString();
   return query ? `?${query}` : "";
@@ -70,14 +72,19 @@ function buildQuery(filters: MovementFilters): string {
 
 export const httpMovementsRepository: MovementsRepository = {
   async list(filters: MovementFilters = {}) {
-    const items = await request<RawMovement[]>(
-      `/movements${buildQuery(filters)}`,
+    const raw = await request<unknown>(`/movements${buildQuery(filters)}`);
+    const page = toPaginated<RawMovement>(
+      raw,
+      filters.page,
+      clampLimit(filters.limit),
     );
-    return (items ?? [])
-      .map(normalizeMovement)
-      .sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-      );
+    const items = page.items.map(normalizeMovement);
+    // El backend ya ordena por fecha desc; se mantiene el sort como
+    // salvaguarda frente a respuestas desordenadas.
+    items.sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+    return { ...page, items };
   },
 };

@@ -40,12 +40,12 @@ describe('httpMovementsRepository', () => {
     it('hace GET a /movements y normaliza _id -> id', async () => {
       fetchMock.mockResolvedValueOnce(mockResponse([RAW_MOVEMENT]));
 
-      const result = await httpMovementsRepository.list();
+      const page = await httpMovementsRepository.list();
 
       const [url, options] = fetchMock.mock.calls[0];
       expect(url).toMatch(/\/movements$/);
       expect(options.headers['Content-Type']).toBe('application/json');
-      expect(result).toEqual([
+      expect(page.items).toEqual([
         {
           id: '6ad78bd3e87a342c9ebbc822',
           batchId: '6ad78bd3e87a342c9ebbc823',
@@ -57,8 +57,8 @@ describe('httpMovementsRepository', () => {
           createdAt: '2026-11-01T10:00:00.000Z',
         },
       ]);
-      expect(result[0]).not.toHaveProperty('_id');
-      expect(result[0]).not.toHaveProperty('__v');
+      expect(page.items[0]).not.toHaveProperty('_id');
+      expect(page.items[0]).not.toHaveProperty('__v');
     });
 
     it('arma el query string con los filtros recibidos', async () => {
@@ -70,6 +70,7 @@ describe('httpMovementsRepository', () => {
         referenceId: 'order-1',
         from: '2026-11-01T00:00:00.000Z',
         to: '2026-11-30T23:59:59.999Z',
+        page: 2,
         limit: 20,
       });
 
@@ -81,6 +82,7 @@ describe('httpMovementsRepository', () => {
       expect(parsed.searchParams.get('referenceId')).toBe('order-1');
       expect(parsed.searchParams.get('from')).toBe('2026-11-01T00:00:00.000Z');
       expect(parsed.searchParams.get('to')).toBe('2026-11-30T23:59:59.999Z');
+      expect(parsed.searchParams.get('page')).toBe('2');
       expect(parsed.searchParams.get('limit')).toBe('20');
     });
 
@@ -95,10 +97,10 @@ describe('httpMovementsRepository', () => {
         ]),
       );
 
-      const result = await httpMovementsRepository.list();
+      const page = await httpMovementsRepository.list();
 
-      expect(result[0].batchId).toBe('batch-anidado');
-      expect(result[0].movementType).toBe('adjustment');
+      expect(page.items[0].batchId).toBe('batch-anidado');
+      expect(page.items[0].movementType).toBe('adjustment');
     });
 
     it('ordena por fecha descendente', async () => {
@@ -109,9 +111,29 @@ describe('httpMovementsRepository', () => {
         ]),
       );
 
-      const result = await httpMovementsRepository.list();
+      const page = await httpMovementsRepository.list();
 
-      expect(result.map((m) => m.id)).toEqual(['nuevo', 'viejo']);
+      expect(page.items.map((m) => m.id)).toEqual(['nuevo', 'viejo']);
+    });
+
+    it('desenvuelve respuestas ya paginadas por el backend', async () => {
+      fetchMock.mockResolvedValueOnce(
+        mockResponse({
+          items: [RAW_MOVEMENT],
+          total: 42,
+          page: 3,
+          limit: 25,
+          totalPages: 2,
+        }),
+      );
+
+      const page = await httpMovementsRepository.list();
+
+      expect(page.total).toBe(42);
+      expect(page.page).toBe(3);
+      expect(page.limit).toBe(25);
+      expect(page.totalPages).toBe(2);
+      expect(page.items).toHaveLength(1);
     });
 
     it('propaga el message de error del backend', async () => {

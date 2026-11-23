@@ -2,6 +2,8 @@
  * Tipos del dominio de movimientos de inventario (kardex) expuestos a la UI.
  */
 
+import type { PaginatedResponse } from "../types";
+
 export type MovementType = "in" | "out" | "waste" | "adjustment";
 
 export interface StockMovement {
@@ -21,6 +23,7 @@ export interface MovementFilters {
   referenceId?: string;
   from?: string;
   to?: string;
+  page?: number;
   limit?: number;
 }
 
@@ -29,6 +32,6 @@ export interface MovementFilters {
  * Los movimientos son de solo lectura: no se editan ni eliminan.
  */
 export interface MovementsRepository {
-  list(filters?: MovementFilters): Promise<StockMovement[]>;
+  list(filters?: MovementFilters): Promise<PaginatedResponse<StockMovement>>;
   subscribe?(listener: () => void): () => void;
 }

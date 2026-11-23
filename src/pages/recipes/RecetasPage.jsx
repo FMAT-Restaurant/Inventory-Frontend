@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useRecipes } from "./hooks/useRecipes";
 import { ENV } from "../../config/env";
+import { PaginationBar } from "../../components/ui/PaginationBar.jsx";
 import { RecipesToolbar } from "./components/RecipesToolbar.jsx";
 import { RecipeCard } from "./components/RecipeCard.jsx";
 import { RecipeDetailModal } from "./components/RecipeDetailModal.jsx";
@@ -21,6 +22,12 @@ export function RecetasPage() {
     clearMessage,
     save,
     remove,
+    page,
+    limit,
+    total,
+    totalPages,
+    goToPage,
+    changeLimit,
   } = useRecipes();
 
   // Modales
@@ -165,7 +172,7 @@ export function RecetasPage() {
         >
           <span>Cargando catálogo de recetas y calculando porciones...</span>
         </div>
-      ) : filteredRecipes.length === 0 ? (
+      ) : total === 0 ? (
         <RecipesEmptyState
           hasSearchOrFilter={hasSearchOrFilter}
           onResetFilters={() =>
@@ -175,17 +182,44 @@ export function RecetasPage() {
           canWrite={canWriteRecipes}
         />
       ) : (
-        <div className="grid-responsive">
-          {filteredRecipes.map((recipe) => (
-            <RecipeCard
-              key={recipe.id || recipe.plateId}
-              recipe={recipe}
-              onViewDetail={(r) => setRecipeToView(r)}
-              onEdit={handleOpenEdit}
-              onDelete={(r) => setRecipeToDelete(r)}
-              canWrite={canWriteRecipes}
-            />
-          ))}
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          {filteredRecipes.length === 0 ? (
+            <div
+              style={{
+                padding: "24px",
+                textAlign: "center",
+                color: "var(--color-muted)",
+                fontSize: "var(--small-size)",
+              }}
+            >
+              Ninguna receta de esta página coincide con la búsqueda. Prueba
+              otra página o ajusta el término.
+            </div>
+          ) : (
+            <div className="grid-responsive">
+              {filteredRecipes.map((recipe) => (
+                <RecipeCard
+                  key={recipe.id || recipe.plateId}
+                  recipe={recipe}
+                  onViewDetail={(r) => setRecipeToView(r)}
+                  onEdit={handleOpenEdit}
+                  onDelete={(r) => setRecipeToDelete(r)}
+                  canWrite={canWriteRecipes}
+                />
+              ))}
+            </div>
+          )}
+
+          <PaginationBar
+            page={page}
+            limit={limit}
+            total={total}
+            totalPages={totalPages}
+            onPageChange={goToPage}
+            onLimitChange={changeLimit}
+            disabled={loading || saving}
+            label="recetas"
+          />
         </div>
       )}
 

@@ -2,6 +2,8 @@
  * Tipos del dominio de recetas expuestos a la UI y contratos de repositorio.
  */
 
+import type { PaginatedResponse } from "../types";
+
 export interface RecipeItem {
   itemId: string;
   itemName: string;
@@ -38,6 +40,8 @@ export type UpdateRecipeInput = Partial<CreateRecipeInput>;
 
 export interface QueryRecipesParams {
   available?: boolean;
+  page?: number;
+  limit?: number;
 }
 
 export interface RecipeSaveResult {
@@ -50,7 +54,7 @@ export interface RecipeSaveResult {
  * Implementado por el repositorio mock (dev) y el HTTP (qa/prod).
  */
 export interface RecipesRepository {
-  list(params?: QueryRecipesParams): Promise<Recipe[]>;
+  list(params?: QueryRecipesParams): Promise<PaginatedResponse<Recipe>>;
   getByIdOrPlateId(idOrPlateId: string): Promise<Recipe | null>;
   save(input: CreateRecipeInput): Promise<RecipeSaveResult>;
   update(id: string, input: UpdateRecipeInput): Promise<Recipe>;

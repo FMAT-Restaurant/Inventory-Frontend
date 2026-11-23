@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useBatches } from "./hooks/useBatches.js";
+import { PaginationBar } from "../../components/ui/PaginationBar.jsx";
 import { BatchesToolbar } from "./components/BatchesToolbar.jsx";
 import { BatchItemCard } from "./components/BatchItemCard.jsx";
 import { BatchesEmptyState } from "./components/BatchesEmptyState.jsx";
@@ -24,6 +25,12 @@ export function BatchesPage({ preselectedItemId }) {
     createBatch,
     updateBatch,
     removeBatch,
+    page,
+    limit,
+    total,
+    totalPages,
+    goToPage,
+    changeLimit,
   } = useBatches();
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -152,29 +159,53 @@ export function BatchesPage({ preselectedItemId }) {
 
       {loading && filteredItems.length === 0 ? (
         <BatchesEmptyState loading />
-      ) : filteredItems.length === 0 ? (
+      ) : total === 0 ? (
         <BatchesEmptyState />
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          {filteredItems.map((item) => {
-            const itemBatches =
-              batchesByItemId.get(item.id) ?? [];
-            const isExpanded = Boolean(expandedBatches[item.id]);
+          {filteredItems.length === 0 ? (
+            <div
+              style={{
+                padding: "24px",
+                textAlign: "center",
+                color: "var(--color-muted)",
+                fontSize: "var(--small-size)",
+              }}
+            >
+              Ningún insumo de esta página coincide con el filtro de estado.
+              Prueba otra página o ajusta el filtro.
+            </div>
+          ) : (
+            filteredItems.map((item) => {
+              const itemBatches = batchesByItemId.get(item.id) ?? [];
+              const isExpanded = Boolean(expandedBatches[item.id]);
 
-            return (
-              <BatchItemCard
-                key={item.id}
-                item={item}
-                batches={itemBatches}
-                expanded={isExpanded}
-                onToggleExpand={() => toggleExpand(item.id)}
-                onNewPurchase={() => openCreateForItem(item.id)}
-                onEditBatch={openEditBatch}
-                onDeleteBatch={requestDeleteBatch}
-                disabled={saving}
-              />
-            );
-          })}
+              return (
+                <BatchItemCard
+                  key={item.id}
+                  item={item}
+                  batches={itemBatches}
+                  expanded={isExpanded}
+                  onToggleExpand={() => toggleExpand(item.id)}
+                  onNewPurchase={() => openCreateForItem(item.id)}
+                  onEditBatch={openEditBatch}
+                  onDeleteBatch={requestDeleteBatch}
+                  disabled={saving}
+                />
+              );
+            })
+          )}
+
+          <PaginationBar
+            page={page}
+            limit={limit}
+            total={total}
+            totalPages={totalPages}
+            onPageChange={goToPage}
+            onLimitChange={changeLimit}
+            disabled={loading || saving}
+            label="insumos"
+          />
         </div>
       )}
 

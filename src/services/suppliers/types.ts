@@ -15,6 +15,8 @@
  *     descarta.
  */
 
+import type { PaginatedResponse } from "../types";
+
 /**
  * Proveedor tal como lo consume la UI.
  *
@@ -133,7 +135,11 @@ export interface SupplierCostHistoryPage {
 }
 
 export interface SuppliersRepository {
-  list(): Promise<Supplier[]>;
+  list(params?: {
+    includeInactive?: boolean;
+    page?: number;
+    limit?: number;
+  }): Promise<PaginatedResponse<Supplier>>;
   getById(id: string): Promise<Supplier | null>;
   create(input: SupplierInput): Promise<Supplier>;
   update(id: string, input: SupplierUpdateInput): Promise<Supplier>;

@@ -18,6 +18,7 @@
  */
 
 import { request } from '../http/client';
+import { buildQueryString, clampLimit, toPaginated } from '../pagination';
 import type {
   Supplier,
   CostHistoryQuery,
@@ -49,9 +50,18 @@ function normalizeSupplier(raw: RawSupplier): Supplier {
 }
 
 export const httpSuppliersRepository: SuppliersRepository = {
-  async list(): Promise<Supplier[]> {
-    const raw = await request<RawSupplier[]>('/suppliers');
-    return raw.map(normalizeSupplier);
+  async list(params = {}) {
+    const query = buildQueryString({
+      includeInactive:
+        params.includeInactive === undefined
+          ? undefined
+          : String(params.includeInactive),
+      page: params.page,
+      limit: clampLimit(params.limit),
+    });
+    const raw = await request<unknown>(`/suppliers${query}`);
+    const page = toPaginated<RawSupplier>(raw, params.page, clampLimit(params.limit));
+    return { ...page, items: page.items.map(normalizeSupplier) };
   },
 
   async getById(id: string): Promise<Supplier | null> {

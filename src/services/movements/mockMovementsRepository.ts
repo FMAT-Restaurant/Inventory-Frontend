@@ -11,6 +11,7 @@
 
 import { mockService } from "../inventory/mockService.js";
 import { TipoMovimiento } from "../inventory/types.js";
+import { paginateInMemory } from "../pagination";
 import type {
   MovementFilters,
   MovementType,
@@ -166,17 +167,15 @@ function applyFilters(
     const to = new Date(filters.to).getTime();
     result = result.filter((m) => new Date(m.createdAt).getTime() <= to);
   }
-  if (filters.limit && filters.limit > 0) {
-    result = result.slice(0, filters.limit);
-  }
 
   return result;
 }
 
 export const mockMovementsRepository: MovementsRepository = {
-  async list(filters: MovementFilters = {}): Promise<StockMovement[]> {
+  async list(filters: MovementFilters = {}) {
     const snapshot = mockService.getSnapshot() as unknown as RawSnapshot;
-    return applyFilters(buildMovements(snapshot), filters);
+    const filtered = applyFilters(buildMovements(snapshot), filters);
+    return paginateInMemory(filtered, filters.page, filters.limit);
   },
 
   subscribe(listener: () => void) {

@@ -11,11 +11,13 @@
  */
 
 import { request } from "../http/client";
+import { buildQueryString, clampLimit, toPaginated } from "../pagination";
 import type {
   Batch,
   BatchesRepository,
   BatchStatus,
   CreateBatchInput,
+  ListBatchesParams,
   UpdateBatchInput,
 } from "./types";
 
@@ -59,12 +61,15 @@ function normalizeBatch(raw: RawBatch): Batch {
 }
 
 export const httpBatchesRepository: BatchesRepository = {
-  async list(itemId?: string) {
-    const query = itemId
-      ? `?itemId=${encodeURIComponent(itemId)}`
-      : "";
-    const items = await request<RawBatch[]>(`/batches${query}`);
-    return (items ?? []).map(normalizeBatch);
+  async list(params: ListBatchesParams = {}) {
+    const query = buildQueryString({
+      itemId: params.itemId,
+      page: params.page,
+      limit: clampLimit(params.limit),
+    });
+    const raw = await request<unknown>(`/batches${query}`);
+    const page = toPaginated<RawBatch>(raw, params.page, clampLimit(params.limit));
+    return { ...page, items: (page.items ?? []).map(normalizeBatch) };
   },
 
   async getById(id: string) {
