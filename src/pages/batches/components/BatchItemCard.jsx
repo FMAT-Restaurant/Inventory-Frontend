@@ -7,6 +7,7 @@ import { PERMISSIONS } from "../../../config/permissions";
 import {
   batchStatusLabel,
   batchStatusVariant,
+  formatFullBatchNumber,
   itemStatusLabel,
   itemStatusVariant,
 } from "../constants.js";
@@ -22,12 +23,16 @@ export function BatchItemCard({
   onToggleExpand,
   onNewPurchase,
   onEditBatch,
+  onWriteOffExpiredBatch,
   onDeleteBatch,
   disabled = false,
 }) {
   // El lote de uso prioritario es el primero utilizable por fecha de
   // vencimiento; los caducados o agotados que lo preceden no cuentan.
   const priorityBatchId = batches.find(isUsableBatch)?.id;
+  const expiredQuantity = batches
+    .filter((b) => b.status === "expired" && Number(b.quantity) > 0)
+    .reduce((sum, b) => sum + Number(b.quantity), 0);
 
   const { can } = useAuth();
   const canWrite = can(PERMISSIONS.BATCHES_WRITE);
@@ -55,6 +60,21 @@ export function BatchItemCard({
             <h3 style={{ fontSize: "var(--h3-size)", overflowWrap: "anywhere" }}>
               {item.name}
             </h3>
+            {item.sku && (
+              <span
+                style={{
+                  fontSize: "var(--caption-size)",
+                  fontFamily: "monospace",
+                  backgroundColor: "#EEF2FF",
+                  padding: "2px 8px",
+                  borderRadius: "4px",
+                  color: "#3730A3",
+                  fontWeight: 600,
+                }}
+              >
+                {item.sku}
+              </span>
+            )}
             <span
               style={{
                 fontSize: "var(--caption-size)",
@@ -70,6 +90,11 @@ export function BatchItemCard({
             <Badge variant={itemStatusVariant(item.status)}>
               {itemStatusLabel(item.status)}
             </Badge>
+            {expiredQuantity > 0 && (
+              <Badge variant="danger">
+                Caducado: {expiredQuantity} {item.unit}
+              </Badge>
+            )}
           </div>
 
           <div
@@ -108,6 +133,16 @@ export function BatchItemCard({
                 {item.totalStock} {item.unit}
               </strong>
             </div>
+            {item.minStock !== undefined && (
+              <div>
+                <span style={{ color: "var(--color-muted)" }}>
+                  Umbral mínimo:{" "}
+                </span>
+                <strong>
+                  {item.minStock} {item.unit}
+                </strong>
+              </div>
+            )}
           </div>
         </div>
 
@@ -180,6 +215,14 @@ export function BatchItemCard({
             >
               {batches.map((lote) => {
                 const esPrioridad = lote.id === priorityBatchId;
+                const isDepleted = lote.status === "depleted";
+                const isExpired = lote.status === "expired";
+                const hasConsumption =
+                  Number(lote.quantity) < Number(lote.initialQuantity);
+                const fullCode = formatFullBatchNumber(
+                  lote.batchNumber,
+                  item.sku,
+                );
 
                 return (
                   <div
@@ -206,7 +249,7 @@ export function BatchItemCard({
                       }}
                     >
                       <strong style={{ color: "var(--color-ink)" }}>
-                        {lote.batchNumber}
+                        {fullCode}
                       </strong>
                       <span>
                         Vence:{" "}
@@ -253,7 +296,17 @@ export function BatchItemCard({
                           Prioridad de uso
                         </span>
                       )}
-                      {canWrite && (
+                      {canWrite && isExpired && Number(lote.quantity) > 0 && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => onWriteOffExpiredBatch?.(lote)}
+                          disabled={disabled}
+                        >
+                          Dar de baja
+                        </Button>
+                      )}
+                      {canWrite && !isExpired && !isDepleted && (
                         <>
                           <Button
                             variant="tertiary"
@@ -267,7 +320,12 @@ export function BatchItemCard({
                             variant="tertiary"
                             size="sm"
                             onClick={() => onDeleteBatch(lote)}
-                            disabled={disabled}
+                            disabled={disabled || hasConsumption}
+                            title={
+                              hasConsumption
+                                ? "No se puede eliminar un lote que ya registra consumo o movimientos"
+                                : "Eliminar lote"
+                            }
                           >
                             Eliminar
                           </Button>

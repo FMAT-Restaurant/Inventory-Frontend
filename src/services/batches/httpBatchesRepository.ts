@@ -39,6 +39,18 @@ function formatDateOnly(dateValue?: string): string {
   return String(dateValue).slice(0, 10);
 }
 
+function formatLocalEntryDate(dateValue?: string): string {
+  if (!dateValue) return "";
+  const str = String(dateValue);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+  const parsed = new Date(str);
+  if (Number.isNaN(parsed.getTime())) return str.slice(0, 10);
+  const year = parsed.getFullYear();
+  const month = String(parsed.getMonth() + 1).padStart(2, "0");
+  const day = String(parsed.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 function normalizeBatch(raw: RawBatch): Batch {
   const id = String(raw.id ?? raw._id ?? "");
   const quantity = Number(raw.quantity ?? 0);
@@ -53,7 +65,7 @@ function normalizeBatch(raw: RawBatch): Batch {
     quantity,
     cost: Number(raw.cost ?? 0),
     expirationDate: formatDateOnly(raw.expirationDate),
-    entryDate: formatDateOnly(raw.entryDate ?? raw.createdAt),
+    entryDate: formatLocalEntryDate(raw.entryDate ?? raw.createdAt),
     status: raw.status ?? "active",
   };
 }
@@ -104,6 +116,9 @@ export const httpBatchesRepository: BatchesRepository = {
     if (input.cost !== undefined) payload.cost = Number(input.cost);
     if (input.expirationDate !== undefined) {
       payload.expirationDate = input.expirationDate;
+    }
+    if (input.reason && input.reason.trim()) {
+      payload.reason = input.reason.trim();
     }
 
     const updated = await request<RawBatch>(`/batches/${id}`, {

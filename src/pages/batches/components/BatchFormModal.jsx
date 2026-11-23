@@ -2,6 +2,7 @@ import { Button } from "../../../components/ui/Button.jsx";
 import { Input, Select } from "../../../components/ui/Input.jsx";
 import { Modal } from "../../../components/ui/Modal.jsx";
 import { assignedInactiveOption } from "../../../services/suppliers/labels";
+import { isExpiredDateInput } from "../constants.js";
 
 export function BatchFormModal({
   isOpen,
@@ -20,6 +21,11 @@ export function BatchFormModal({
   // baja; no se sustituye por otro.
   const inactiveOption = assignedInactiveOption(values.supplierId, allSuppliers);
   const selectedItem = items.find((item) => item.id === values.itemId);
+  const isExpiredDate = !isEditing && isExpiredDateInput(values.expirationDate);
+  const quantityChanged =
+    isEditing &&
+    values.originalQuantity !== "" &&
+    Number(values.quantity) !== Number(values.originalQuantity);
 
   return (
     <Modal
@@ -103,13 +109,25 @@ export function BatchFormModal({
             label="Costo unitario ($)"
             type="number"
             step="0.01"
-            min="0"
+            min="0.01"
             placeholder="Ej. 45.00"
             value={values.cost}
             onChange={(e) => onChange("cost", e.target.value)}
             required
           />
         </div>
+
+        {quantityChanged && (
+          <Input
+            label="Motivo del ajuste"
+            type="text"
+            placeholder="Ej. Corrección por conteo físico"
+            value={values.reason || ""}
+            onChange={(e) => onChange("reason", e.target.value)}
+            required
+            helperText="Se guardará en la bitácora de movimientos para auditoría."
+          />
+        )}
 
         <Input
           label="Fecha de caducidad"
@@ -119,6 +137,23 @@ export function BatchFormModal({
           required
           helperText="Se registrará el lote con esta fecha de caducidad."
         />
+
+        {isExpiredDate && (
+          <div
+            style={{
+              padding: "10px 12px",
+              borderRadius: "var(--radius-control)",
+              backgroundColor: "var(--bg-warning, #FEF3C7)",
+              color: "var(--color-warning, #92400E)",
+              fontSize: "var(--caption-size)",
+              lineHeight: 1.4,
+            }}
+          >
+            La fecha seleccionada ya venció. Este lote se registrará como{" "}
+            <strong>CADUCADO</strong> (ej. por hallazgo en conteo físico) y{" "}
+            <strong>no sumará</strong> a la existencia disponible.
+          </div>
+        )}
 
         {error && (
           <span
@@ -148,7 +183,9 @@ export function BatchFormModal({
               ? "Guardando..."
               : isEditing
                 ? "Guardar cambios"
-                : "Guardar compra"}
+                : isExpiredDate
+                  ? "Registrar lote vencido"
+                  : "Guardar compra"}
           </Button>
         </div>
       </form>

@@ -30,6 +30,7 @@ export interface UpdateBatchInput {
   quantity?: number;
   cost?: number;
   expirationDate?: string;
+  reason?: string;
 }
 
 /**
