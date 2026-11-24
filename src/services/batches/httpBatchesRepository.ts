@@ -93,9 +93,11 @@ export const httpBatchesRepository: BatchesRepository = {
       itemId: input.itemId,
       quantity: Number(input.quantity),
       cost: Number(input.cost),
-      expirationDate: input.expirationDate,
     };
 
+    if (input.expirationDate && input.expirationDate.trim()) {
+      payload.expirationDate = input.expirationDate.trim();
+    }
     if (input.batchNumber && input.batchNumber.trim()) {
       payload.batchNumber = input.batchNumber.trim();
     }
@@ -121,7 +123,7 @@ export const httpBatchesRepository: BatchesRepository = {
     if (input.quantity !== undefined) payload.quantity = Number(input.quantity);
     if (input.cost !== undefined) payload.cost = Number(input.cost);
     if (input.expirationDate !== undefined) {
-      payload.expirationDate = input.expirationDate;
+      payload.expirationDate = input.expirationDate || null;
     }
     if (input.reason && input.reason.trim()) {
       payload.reason = input.reason.trim();

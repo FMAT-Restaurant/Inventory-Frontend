@@ -282,12 +282,18 @@ export function BatchItemCard({
                       <strong style={{ color: "var(--color-ink)" }}>
                         {fullCode}
                       </strong>
-                      <span>
-                        Vence:{" "}
-                        <strong style={{ color: "var(--color-ink)" }}>
-                          {lote.expirationDate}
-                        </strong>
-                      </span>
+                      {lote.expirationDate ? (
+                        <span>
+                          Vence:{" "}
+                          <strong style={{ color: "var(--color-ink)" }}>
+                            {lote.expirationDate}
+                          </strong>
+                        </span>
+                      ) : (
+                        <span style={{ color: "var(--color-muted)" }}>
+                          Sin caducidad
+                        </span>
+                      )}
                       {lote.entryDate && (
                         <span style={{ color: "var(--color-muted)" }}>
                           Ingreso: {lote.entryDate}

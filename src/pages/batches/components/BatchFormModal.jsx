@@ -24,6 +24,7 @@ export function BatchFormModal({
   const isEditing = Boolean(values.id);
   const inactiveOption = assignedInactiveOption(values.supplierId, allSuppliers);
   const selectedItem = items.find((item) => item.id === values.itemId);
+  const isPerishable = selectedItem ? Boolean(selectedItem.isPerishable) : true;
   const unit = selectedItem?.unit ?? "";
   const isExpiredDate = !isEditing && isExpiredDateInput(values.expirationDate);
 
@@ -74,11 +75,10 @@ export function BatchFormModal({
       );
     }
     if (
-      values.originalExpirationDate &&
-      values.expirationDate !== values.originalExpirationDate
+      (values.expirationDate || "") !== (values.originalExpirationDate || "")
     ) {
       changes.push(
-        `Caducidad: ${values.originalExpirationDate} → ${values.expirationDate}`,
+        `Caducidad: ${values.originalExpirationDate || "Sin caducidad"} → ${values.expirationDate || "Sin caducidad"}`,
       );
     }
   }
@@ -194,16 +194,22 @@ export function BatchFormModal({
         )}
 
         <Input
-          label="Fecha de caducidad"
+          label={
+            isPerishable
+              ? "Fecha de caducidad"
+              : "Fecha de caducidad (opcional)"
+          }
           type="date"
           min={isEditing && values.entryDate ? values.entryDate : undefined}
           value={values.expirationDate}
           onChange={(e) => onChange("expirationDate", e.target.value)}
-          required
+          required={isPerishable}
           helperText={
-            isEditing
-              ? "Cambiar la fecha modifica el orden de uso FEFO."
-              : "Se registrará el lote con esta fecha de caducidad."
+            !isPerishable
+              ? "Insumo no perecedero; puedes dejar este campo vacío."
+              : isEditing
+                ? "Cambiar la fecha modifica el orden de uso FEFO."
+                : "Se registrará el lote con esta fecha de caducidad."
           }
         />
 

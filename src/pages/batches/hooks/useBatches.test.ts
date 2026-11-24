@@ -172,6 +172,22 @@ describe("validaciones de lotes", () => {
       ),
     ).toMatch(/ingreso/i);
   });
+
+  it("permite omitir fecha de caducidad en insumos no perecederos", () => {
+    expect(
+      validateCreateBatchInput(
+        { itemId: "item-spoon", quantity: 50, cost: 1.5, expirationDate: null },
+        false,
+      ),
+    ).toBeNull();
+
+    expect(
+      validateCreateBatchInput(
+        { itemId: "item-1", quantity: 5, cost: 10, expirationDate: null },
+        true,
+      ),
+    ).toMatch(/caducidad/i);
+  });
 });
 
 describe("useBatches", () => {

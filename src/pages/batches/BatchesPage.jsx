@@ -108,15 +108,19 @@ export function BatchesPage({ preselectedItemId }) {
             patchPayload.reason = form.reason.trim();
           }
         }
-        if (form.expirationDate !== form.originalExpirationDate) {
-          patchPayload.expirationDate = form.expirationDate;
+        if ((form.expirationDate || "") !== (form.originalExpirationDate || "")) {
+          patchPayload.expirationDate = form.expirationDate || null;
         }
+
+        const targetItem = items.find((i) => i.id === form.itemId);
+        const isPerishable = targetItem ? Boolean(targetItem.isPerishable) : true;
 
         await updateBatch(
           form.id,
           patchPayload,
           previousQty,
           form.entryDate || undefined,
+          isPerishable,
         );
       } else {
         const targetItemId = form.itemId || items[0]?.id || "";
@@ -126,7 +130,7 @@ export function BatchesPage({ preselectedItemId }) {
           supplierId: form.supplierId || null,
           quantity: Number(form.quantity),
           cost: Number(form.cost),
-          expirationDate: form.expirationDate,
+          expirationDate: form.expirationDate || null,
         });
         // Expandir automáticamente los lotes del insumo al que se le registró compra
         if (targetItemId) {

@@ -25,6 +25,7 @@ export const INITIAL_BATCH_FILTERS: BatchFilters = {
 
 export function validateCreateBatchInput(
   input: CreateBatchInput,
+  isPerishable = true,
 ): string | null {
   if (!input.itemId) {
     return "Selecciona el insumo a reabastecer.";
@@ -35,7 +36,7 @@ export function validateCreateBatchInput(
   if (Number.isNaN(Number(input.cost)) || Number(input.cost) <= 0) {
     return "El costo unitario debe ser mayor a 0.";
   }
-  if (!input.expirationDate) {
+  if (isPerishable && !input.expirationDate) {
     return "Selecciona la fecha de caducidad.";
   }
   return null;
@@ -45,6 +46,7 @@ export function validateUpdateBatchInput(
   input: UpdateBatchInput,
   previousQuantity?: number,
   entryDate?: string,
+  isPerishable = true,
 ): string | null {
   if (
     input.quantity !== undefined &&
@@ -58,7 +60,7 @@ export function validateUpdateBatchInput(
   ) {
     return "El costo unitario debe ser mayor a 0.";
   }
-  if (input.expirationDate !== undefined && !input.expirationDate) {
+  if (isPerishable && input.expirationDate !== undefined && !input.expirationDate) {
     return "Selecciona la fecha de caducidad.";
   }
   if (
@@ -134,7 +136,9 @@ export function useBatches() {
 
   const createBatch = useCallback(
     async (input: CreateBatchInput) => {
-      const validationError = validateCreateBatchInput(input);
+      const targetItem = items.find((i) => i.id === input.itemId);
+      const isPerishable = targetItem ? Boolean(targetItem.isPerishable) : true;
+      const validationError = validateCreateBatchInput(input, isPerishable);
       if (validationError) {
         setError(validationError);
         throw new Error(validationError);
@@ -156,7 +160,7 @@ export function useBatches() {
         setSaving(false);
       }
     },
-    [reload],
+    [items, reload],
   );
 
   const updateBatch = useCallback(
@@ -165,11 +169,13 @@ export function useBatches() {
       input: UpdateBatchInput,
       previousQuantity?: number,
       entryDate?: string,
+      isPerishable = true,
     ) => {
       const validationError = validateUpdateBatchInput(
         input,
         previousQuantity,
         entryDate,
+        isPerishable,
       );
       if (validationError) {
         setError(validationError);
@@ -272,11 +278,16 @@ export function useBatches() {
       map.set(batch.itemId, current);
     }
     for (const [itemId, list] of map.entries()) {
-      list.sort(
-        (a, b) =>
-          new Date(a.expirationDate).getTime() -
-          new Date(b.expirationDate).getTime(),
-      );
+      list.sort((a, b) => {
+        const aTime = a.expirationDate
+          ? new Date(a.expirationDate).getTime()
+          : Number.POSITIVE_INFINITY;
+        const bTime = b.expirationDate
+          ? new Date(b.expirationDate).getTime()
+          : Number.POSITIVE_INFINITY;
+        if (aTime !== bTime) return aTime - bTime;
+        return (a.entryDate || "").localeCompare(b.entryDate || "");
+      });
       map.set(itemId, list);
     }
     return map;

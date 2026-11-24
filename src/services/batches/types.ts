@@ -23,7 +23,7 @@ export interface CreateBatchInput {
   supplierId?: string | null;
   quantity: number;
   cost: number;
-  expirationDate: string;
+  expirationDate?: string | null;
 }
 
 export interface UpdateBatchInput {
@@ -31,7 +31,7 @@ export interface UpdateBatchInput {
   supplierId?: string | null;
   quantity?: number;
   cost?: number;
-  expirationDate?: string;
+  expirationDate?: string | null;
   reason?: string;
 }
 
