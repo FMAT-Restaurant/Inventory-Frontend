@@ -11,6 +11,7 @@
 
 import { ENV } from "../../config/env";
 import { HttpError, requestWithStatus } from "../http/client";
+import { buildPageQuery, toPage } from "../pagination";
 import type {
   CreateRecipeInput,
   QueryRecipesParams,
@@ -104,14 +105,11 @@ async function request<T>(
 }
 
 export const httpRecipesRepository: RecipesRepository = {
-  async list(params?: QueryRecipesParams): Promise<Recipe[]> {
-    let query = "";
-    if (params?.available !== undefined) {
-      query = `?available=${params.available}`;
-    }
+  async list(params: QueryRecipesParams = {}) {
+    const query = buildPageQuery(params, { available: params.available });
 
-    const { data } = await request<RawRecipe[]>(`/recipes${query}`);
-    return (data ?? []).map(normalizeRecipe);
+    const { data } = await request<unknown>(`/recipes${query}`);
+    return toPage<RawRecipe, Recipe>(data, params, normalizeRecipe);
   },
 
   async getByIdOrPlateId(idOrPlateId: string): Promise<Recipe | null> {

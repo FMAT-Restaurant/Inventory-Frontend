@@ -5,6 +5,7 @@ import { batchesRepository } from "../../../services/batches";
 import type { Batch } from "../../../services/batches";
 import { itemsRepository } from "../../../services/items";
 import type { Item } from "../../../services/items";
+import { fetchAllPages } from "../../../services/pagination";
 
 export interface WasteBatchOption {
   batchId: string;
@@ -52,8 +53,8 @@ export function useWaste(enabled: boolean) {
     setError(null);
     try {
       const [batchList, itemList] = await Promise.all([
-        batchesRepository.list(),
-        itemsRepository.list(),
+        fetchAllPages((p, l) => batchesRepository.list({ page: p, limit: l })),
+        fetchAllPages((p, l) => itemsRepository.list({ page: p, limit: l })),
       ]);
       setBatches(batchList);
       setItems(itemList);

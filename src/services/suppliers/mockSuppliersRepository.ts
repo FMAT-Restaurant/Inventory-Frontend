@@ -14,6 +14,7 @@
  */
 
 import { mockService } from '../inventory/mockService.js';
+import { fetchAllPages, paginateInMemory } from '../pagination';
 import type {
   Supplier,
   SupplierInput,
@@ -42,13 +43,15 @@ const READ_ONLY_ERROR =
   'Operación no disponible en modo mock. Configura VITE_USE_MOCK=false y VITE_API_URL para usar el backend real.';
 
 export const mockSuppliersRepository: SuppliersRepository = {
-  async list(): Promise<Supplier[]> {
+  async list(params = {}) {
     const raw = (await mockService.getProveedores()) as MockProveedor[];
-    return raw.map(mapMockProveedor);
+    return paginateInMemory(raw.map(mapMockProveedor), params.page, params.limit);
   },
 
   async getById(id: string): Promise<Supplier | null> {
-    const all = await this.list();
+    const all = await fetchAllPages((p, l) =>
+      this.list({ page: p, limit: l }),
+    );
     return all.find((s) => s.id === id) ?? null;
   },
 

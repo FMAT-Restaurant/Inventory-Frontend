@@ -1,13 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { itemsRepository } from "../../../services/items";
+import { fetchAllPages } from "../../../services/pagination";
+import { usePagination } from "../../../hooks/usePagination";
 import { isActiveSupplier } from "../../../services/suppliers/labels";
 import type { Item, Supplier } from "../../../services/items";
 import { batchesRepository } from "../../../services/batches";
-import type {
-  Batch,
-  CreateBatchInput,
-  UpdateBatchInput,
-} from "../../../services/batches";
+import type { Batch, CreateBatchInput, UpdateBatchInput } from "../../../services/batches";
 
 export interface BatchFilters {
   search: string;
@@ -22,6 +20,9 @@ export const INITIAL_BATCH_FILTERS: BatchFilters = {
   category: "TODAS",
   batchCondition: "TODOS",
 };
+
+/** Tamaño de página por defecto para el listado de insumos con lotes. */
+export const DEFAULT_BATCHES_ITEMS_LIMIT = 20;
 
 export function validateCreateBatchInput(
   input: CreateBatchInput,
@@ -88,6 +89,9 @@ function errorMessage(err: unknown, fallback: string): string {
 /**
  * Hook que encapsula toda la lógica de negocio y el acceso a datos
  * de la sección de insumos y lotes (batches).
+ *
+ * Paginación server-side sobre el listado de insumos. Los lotes se cargan
+ * en un fetch ampliado para poder agruparlos por insumo en la vista.
  */
 export function useBatches() {
   const [items, setItems] = useState<Item[]>([]);
@@ -100,20 +104,30 @@ export function useBatches() {
   const [message, setMessage] = useState<string | null>(null);
   const [filters, setFilters] = useState<BatchFilters>(INITIAL_BATCH_FILTERS);
 
-  const reload = useCallback(async () => {
+  // Estado de paginación (sobre items).
+  const {
+    pagination,
+    page,
+    limit,
+    applyPage,
+    goToPage,
+    changeLimit,
+    resetPage,
+  } = usePagination(DEFAULT_BATCHES_ITEMS_LIMIT);
+
+  // Página de insumos (depende de búsqueda + page/limit).
+  const reloadItems = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      // Toleramos que el usuario tenga BATCHES_READ sin SUPPLIERS_READ
-      // para que un 403 en proveedores no bloquee toda la gestión de lotes.
-      const [itemList, batchList, supplierList] = await Promise.all([
-        itemsRepository.list(),
-        batchesRepository.list(),
-        itemsRepository.listSuppliers().catch(() => [] as Supplier[]),
-      ]);
-      setItems(itemList);
-      setBatches(batchList);
-      setSuppliers(supplierList);
+      const search = filters.search.trim();
+      const itemPage = await itemsRepository.list({
+        q: search || undefined,
+        page,
+        limit,
+      });
+      setItems(itemPage.items);
+      applyPage(itemPage);
     } catch (err) {
       setError(
         errorMessage(err, "No se pudieron cargar los insumos y sus lotes."),
@@ -121,11 +135,40 @@ export function useBatches() {
     } finally {
       setLoading(false);
     }
+  }, [filters.search, page, limit, applyPage]);
+
+  // Catálogo de lotes + proveedores: se carga al montar y cuando se invalida.
+  const reloadCatalog = useCallback(async () => {
+    try {
+      // Toleramos que el usuario tenga BATCHES_READ sin SUPPLIERS_READ
+      // para que un 403 en proveedores no bloquee toda la gestión de lotes.
+      const [batchList, supplierList] = await Promise.all([
+        fetchAllPages((p, l) => batchesRepository.list({ page: p, limit: l })),
+        fetchAllPages((p, l) =>
+          itemsRepository.listSuppliers({ page: p, limit: l }),
+        ).catch(() => [] as Supplier[]),
+      ]);
+      setBatches(batchList);
+      setSuppliers(supplierList);
+    } catch (err) {
+      setError(
+        errorMessage(err, "No se pudieron cargar los insumos y sus lotes."),
+      );
+    }
   }, []);
 
+  // Recarga completa (tras crear/editar/eliminar un lote).
+  const reload = useCallback(async () => {
+    await Promise.all([reloadItems(), reloadCatalog()]);
+  }, [reloadItems, reloadCatalog]);
+
   useEffect(() => {
-    void reload();
-  }, [reload]);
+    void reloadItems();
+  }, [reloadItems]);
+
+  useEffect(() => {
+    void reloadCatalog();
+  }, [reloadCatalog]);
 
   useEffect(() => {
     if (!batchesRepository.subscribe) return;
@@ -253,13 +296,22 @@ export function useBatches() {
     setMessage(null);
   }, []);
 
-  const updateFilters = useCallback((partial: Partial<BatchFilters>) => {
-    setFilters((prev) => ({ ...prev, ...partial }));
-  }, []);
+  const updateFilters = useCallback(
+    (partial: Partial<BatchFilters>) => {
+      setFilters((prev) => {
+        if (partial.search !== undefined && partial.search !== prev.search) {
+          resetPage();
+        }
+        return { ...prev, ...partial };
+      });
+    },
+    [resetPage],
+  );
 
   const resetFilters = useCallback(() => {
+    resetPage();
     setFilters(INITIAL_BATCH_FILTERS);
-  }, []);
+  }, [resetPage]);
 
   const hasActiveFilters = useMemo(
     () =>
@@ -384,5 +436,7 @@ export function useBatches() {
     updateBatch,
     writeOffExpiredBatch,
     removeBatch,
+    // Paginación: propagar con {...pagination} a <PaginationBar />
+    pagination,
   };
 }

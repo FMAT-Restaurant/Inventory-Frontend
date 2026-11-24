@@ -238,7 +238,10 @@ test.describe("BatchesPage — E2E flujo completo (Front + Back + MongoDB)", () 
         `${API_URL}/movements?batchId=${batchId}&movementType=adjustment`,
       );
       expect(movRes.ok()).toBeTruthy();
-      const movements = await movRes.json();
+      const rawMovements = await movRes.json();
+      const movements = Array.isArray(rawMovements)
+        ? rawMovements
+        : rawMovements.items;
       expect(movements).toHaveLength(1);
       expect(movements[0].quantity).toBe(-3);
       expect(movements[0].reason).toBe("Conteo físico E2E");

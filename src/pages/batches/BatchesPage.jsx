@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useBatches } from "./hooks/useBatches.js";
+import { PaginatedSection } from "../../components/ui/PaginatedSection.jsx";
 import { BatchesToolbar } from "./components/BatchesToolbar.jsx";
 import { BatchItemCard } from "./components/BatchItemCard.jsx";
 import { BatchesEmptyState } from "./components/BatchesEmptyState.jsx";
@@ -28,6 +29,7 @@ export function BatchesPage({ preselectedItemId }) {
     updateBatch,
     writeOffExpiredBatch,
     removeBatch,
+    pagination,
   } = useBatches();
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -229,33 +231,38 @@ export function BatchesPage({ preselectedItemId }) {
         disabled={loading}
       />
 
-      {loading && filteredItems.length === 0 ? (
-        <BatchesEmptyState loading />
-      ) : filteredItems.length === 0 ? (
-        <BatchesEmptyState />
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          {filteredItems.map((item) => {
-            const itemBatches = batchesByItemId.get(item.id) ?? [];
-            const isExpanded = Boolean(expandedBatches[item.id]);
+      <PaginatedSection
+        loading={loading}
+        total={pagination.total}
+        filteredCount={filteredItems.length}
+        emptyState={<BatchesEmptyState />}
+        loadingState={<BatchesEmptyState loading />}
+        noMatchesMessage="Ningún insumo de esta página coincide con los filtros activos. Prueba otra página o limpia los filtros."
+        pagination={pagination}
+        paginationDisabled={loading || saving}
+        paginationLabel="insumos"
+        gap="16px"
+      >
+        {filteredItems.map((item) => {
+          const itemBatches = batchesByItemId.get(item.id) ?? [];
+          const isExpanded = Boolean(expandedBatches[item.id]);
 
-            return (
-              <BatchItemCard
-                key={item.id}
-                item={item}
-                batches={itemBatches}
-                expanded={isExpanded}
-                onToggleExpand={() => toggleExpand(item.id)}
-                onNewPurchase={() => openCreateForItem(item.id)}
-                onEditBatch={openEditBatch}
-                onWriteOffExpiredBatch={requestWriteOffBatch}
-                onDeleteBatch={requestDeleteBatch}
-                disabled={saving}
-              />
-            );
-          })}
-        </div>
-      )}
+          return (
+            <BatchItemCard
+              key={item.id}
+              item={item}
+              batches={itemBatches}
+              expanded={isExpanded}
+              onToggleExpand={() => toggleExpand(item.id)}
+              onNewPurchase={() => openCreateForItem(item.id)}
+              onEditBatch={openEditBatch}
+              onWriteOffExpiredBatch={requestWriteOffBatch}
+              onDeleteBatch={requestDeleteBatch}
+              disabled={saving}
+            />
+          );
+        })}
+      </PaginatedSection>
 
       <BatchFormModal
         isOpen={modalOpen}

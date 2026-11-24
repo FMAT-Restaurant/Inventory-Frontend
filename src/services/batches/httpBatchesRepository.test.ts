@@ -39,15 +39,24 @@ describe("httpBatchesRepository", () => {
   });
 
   it("lista lotes y normaliza _id, expirationDate y entryDate local", async () => {
-    fetchMock.mockResolvedValueOnce(mockResponse([RAW_BATCH]));
+    fetchMock.mockResolvedValueOnce(
+      mockResponse({
+        items: [RAW_BATCH],
+        total: 1,
+        page: 1,
+        limit: 20,
+        totalPages: 1,
+      }),
+    );
 
     const result = await httpBatchesRepository.list();
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url] = fetchMock.mock.calls[0];
-    expect(url).toMatch(/\/batches$/);
-    expect(result).toHaveLength(1);
-    expect(result[0]).toMatchObject({
+    expect(url).toMatch(/\/batches/);
+    expect(result.items).toHaveLength(1);
+    expect(result.total).toBe(1);
+    expect(result.items[0]).toMatchObject({
       id: RAW_BATCH._id,
       batchNumber: RAW_BATCH.batchNumber,
       itemId: RAW_BATCH.itemId,
@@ -58,16 +67,24 @@ describe("httpBatchesRepository", () => {
       expirationDate: "2026-12-31",
       status: "active",
     });
-    expect(result[0].entryDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(result.items[0].entryDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
   it("filtra por itemId en query string cuando se proporciona", async () => {
-    fetchMock.mockResolvedValueOnce(mockResponse([RAW_BATCH]));
+    fetchMock.mockResolvedValueOnce(
+      mockResponse({
+        items: [RAW_BATCH],
+        total: 1,
+        page: 1,
+        limit: 20,
+        totalPages: 1,
+      }),
+    );
 
-    await httpBatchesRepository.list("660000000000000000000010");
+    await httpBatchesRepository.list({ itemId: "660000000000000000000010" });
 
     const [url] = fetchMock.mock.calls[0];
-    expect(url).toMatch(/\/batches\?itemId=660000000000000000000010$/);
+    expect(url).toMatch(/\/batches\?.*itemId=660000000000000000000010/);
   });
 
   it("crea un lote enviando POST /batches con campos normalizados", async () => {

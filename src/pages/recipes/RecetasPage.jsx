@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useRecipes } from "./hooks/useRecipes";
 import { ENV } from "../../config/env";
+import { PaginatedSection } from "../../components/ui/PaginatedSection.jsx";
 import { RecipesToolbar } from "./components/RecipesToolbar.jsx";
 import { RecipeCard } from "./components/RecipeCard.jsx";
 import { RecipeDetailModal } from "./components/RecipeDetailModal.jsx";
@@ -21,6 +22,7 @@ export function RecetasPage() {
     clearMessage,
     save,
     remove,
+    pagination,
   } = useRecipes();
 
   // Modales
@@ -152,29 +154,39 @@ export function RecetasPage() {
       />
 
       {/* Contenido Principal */}
-      {loading ? (
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            minHeight: "200px",
-            color: "var(--color-muted)",
-            fontSize: "var(--small-size)",
-          }}
-        >
-          <span>Cargando catálogo de recetas y calculando porciones...</span>
-        </div>
-      ) : filteredRecipes.length === 0 ? (
-        <RecipesEmptyState
-          hasSearchOrFilter={hasSearchOrFilter}
-          onResetFilters={() =>
-            updateFilters({ search: "", availability: "ALL" })
-          }
-          onNewRecipe={handleOpenCreate}
-          canWrite={canWriteRecipes}
-        />
-      ) : (
+      <PaginatedSection
+        loading={loading}
+        total={pagination.total}
+        filteredCount={filteredRecipes.length}
+        emptyState={
+          <RecipesEmptyState
+            hasSearchOrFilter={hasSearchOrFilter}
+            onResetFilters={() =>
+              updateFilters({ search: "", availability: "ALL" })
+            }
+            onNewRecipe={handleOpenCreate}
+            canWrite={canWriteRecipes}
+          />
+        }
+        loadingState={
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              minHeight: "200px",
+              color: "var(--color-muted)",
+              fontSize: "var(--small-size)",
+            }}
+          >
+            <span>Cargando catálogo de recetas y calculando porciones...</span>
+          </div>
+        }
+        noMatchesMessage="Ninguna receta de esta página coincide con la búsqueda. Prueba otra página o ajusta el término."
+        pagination={pagination}
+        paginationDisabled={loading || saving}
+        paginationLabel="recetas"
+      >
         <div className="grid-responsive">
           {filteredRecipes.map((recipe) => (
             <RecipeCard
@@ -187,7 +199,7 @@ export function RecetasPage() {
             />
           ))}
         </div>
-      )}
+      </PaginatedSection>
 
       {/* Modal Detalle de Receta (Solo Lectura) */}
       <RecipeDetailModal

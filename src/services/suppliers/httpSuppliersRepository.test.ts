@@ -61,7 +61,7 @@ describe('httpSuppliersRepository', () => {
         mockResponse([RAW_SUPPLIER, { ...RAW_SUPPLIER, _id: 'otro-id' }]),
       );
 
-      const result = await httpSuppliersRepository.list();
+      const page = await httpSuppliersRepository.list();
 
       // Verifica la petición
       expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -70,9 +70,9 @@ describe('httpSuppliersRepository', () => {
       expect(options.method).toBeUndefined(); // GET implícito
       expect(options.headers['Content-Type']).toBe('application/json');
 
-      // Verifica la normalización
-      expect(result).toHaveLength(2);
-      expect(result[0]).toEqual({
+      // Verifica la normalización dentro de la respuesta paginada
+      expect(page.items).toHaveLength(2);
+      expect(page.items[0]).toEqual({
         id: '6ad78bd3e87a342c9ebbc822',
         name: 'Proveedor Central',
         contactName: 'Juan Dominguez',
@@ -82,15 +82,55 @@ describe('httpSuppliersRepository', () => {
         createdAt: '2026-10-20T15:42:11.715Z',
         updatedAt: '2026-10-20T15:42:11.715Z',
       });
-      expect(result[0]).not.toHaveProperty('_id');
-      expect(result[0]).not.toHaveProperty('__v');
-      expect(result[1].id).toBe('otro-id');
+      expect(page.items[0]).not.toHaveProperty('_id');
+      expect(page.items[0]).not.toHaveProperty('__v');
+      expect(page.items[1].id).toBe('otro-id');
     });
 
-    it('devuelve [] si el backend devuelve []', async () => {
+    it('desenvuelve respuestas paginadas del backend', async () => {
+      fetchMock.mockResolvedValueOnce(
+        mockResponse({
+          items: [RAW_SUPPLIER],
+          total: 42,
+          page: 2,
+          limit: 20,
+          totalPages: 3,
+        }),
+      );
+
+      const page = await httpSuppliersRepository.list({ page: 2, limit: 20 });
+
+      expect(page.total).toBe(42);
+      expect(page.page).toBe(2);
+      expect(page.limit).toBe(20);
+      expect(page.totalPages).toBe(3);
+      expect(page.items).toHaveLength(1);
+      expect(page.items[0].id).toBe('6ad78bd3e87a342c9ebbc822');
+    });
+
+    it('envía page/limit/includeInactive como query params', async () => {
       fetchMock.mockResolvedValueOnce(mockResponse([]));
-      const result = await httpSuppliersRepository.list();
-      expect(result).toEqual([]);
+
+      await httpSuppliersRepository.list({
+        includeInactive: true,
+        page: 3,
+        limit: 15,
+      });
+
+      const [url] = fetchMock.mock.calls[0];
+      const parsed = new URL(url);
+      expect(parsed.pathname).toMatch(/\/suppliers$/);
+      expect(parsed.searchParams.get('includeInactive')).toBe('true');
+      expect(parsed.searchParams.get('page')).toBe('3');
+      expect(parsed.searchParams.get('limit')).toBe('15');
+    });
+
+    it('devuelve items=[] si el backend devuelve []', async () => {
+      fetchMock.mockResolvedValueOnce(mockResponse([]));
+      const page = await httpSuppliersRepository.list();
+      expect(page.items).toEqual([]);
+      expect(page.total).toBe(0);
+      expect(page.totalPages).toBe(1);
     });
 
     it('propaga el message de error del backend (string)', async () => {

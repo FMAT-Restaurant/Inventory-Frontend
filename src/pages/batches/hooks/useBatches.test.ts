@@ -190,12 +190,22 @@ describe("validaciones de lotes", () => {
   });
 });
 
+function asPage<T>(items: T[]) {
+  return {
+    items,
+    total: items.length,
+    page: 1,
+    limit: 20,
+    totalPages: 1,
+  };
+}
+
 describe("useBatches", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    itemsRepo.list.mockResolvedValue(ITEMS);
-    itemsRepo.listSuppliers.mockResolvedValue(SUPPLIERS);
-    batchesRepo.list.mockResolvedValue(BATCHES);
+    itemsRepo.list.mockResolvedValue(asPage(ITEMS));
+    itemsRepo.listSuppliers.mockResolvedValue(asPage(SUPPLIERS));
+    batchesRepo.list.mockResolvedValue(asPage(BATCHES));
   });
 
   afterEach(() => {
