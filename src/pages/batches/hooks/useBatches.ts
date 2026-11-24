@@ -44,6 +44,7 @@ export function validateCreateBatchInput(
 export function validateUpdateBatchInput(
   input: UpdateBatchInput,
   previousQuantity?: number,
+  entryDate?: string,
 ): string | null {
   if (
     input.quantity !== undefined &&
@@ -59,6 +60,13 @@ export function validateUpdateBatchInput(
   }
   if (input.expirationDate !== undefined && !input.expirationDate) {
     return "Selecciona la fecha de caducidad.";
+  }
+  if (
+    entryDate &&
+    input.expirationDate &&
+    input.expirationDate < entryDate
+  ) {
+    return "La fecha de caducidad no puede ser anterior a la fecha de ingreso.";
   }
   if (
     previousQuantity !== undefined &&
@@ -152,8 +160,17 @@ export function useBatches() {
   );
 
   const updateBatch = useCallback(
-    async (id: string, input: UpdateBatchInput, previousQuantity?: number) => {
-      const validationError = validateUpdateBatchInput(input, previousQuantity);
+    async (
+      id: string,
+      input: UpdateBatchInput,
+      previousQuantity?: number,
+      entryDate?: string,
+    ) => {
+      const validationError = validateUpdateBatchInput(
+        input,
+        previousQuantity,
+        entryDate,
+      );
       if (validationError) {
         setError(validationError);
         throw new Error(validationError);

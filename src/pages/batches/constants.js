@@ -35,13 +35,19 @@ export const STOCK_STATUS_LEGEND = [
 export const emptyBatchForm = (items = [], preselectedItemId = "") => ({
   id: "",
   batchNumber: "",
+  originalBatchNumber: "",
   // Sin proveedor por defecto: asignarlo es una decisión explícita.
   supplierId: "",
+  originalSupplierId: "",
   itemId: preselectedItemId || items[0]?.id || "",
+  initialQuantity: "",
   quantity: "",
   originalQuantity: "",
   cost: "",
+  originalCost: "",
   expirationDate: "",
+  originalExpirationDate: "",
+  entryDate: "",
   reason: "",
   lockItem: Boolean(preselectedItemId),
 });
@@ -49,13 +55,19 @@ export const emptyBatchForm = (items = [], preselectedItemId = "") => ({
 export const formFromBatch = (batch) => ({
   id: batch.id,
   batchNumber: batch.batchNumber || "",
+  originalBatchNumber: batch.batchNumber || "",
   // Se muestra el proveedor del lote, nunca otro en su lugar.
   supplierId: batch.supplierId || "",
+  originalSupplierId: batch.supplierId || "",
   itemId: batch.itemId,
+  initialQuantity: String(batch.initialQuantity ?? batch.quantity ?? ""),
   quantity: String(batch.quantity ?? ""),
   originalQuantity: String(batch.quantity ?? ""),
   cost: String(batch.cost ?? ""),
+  originalCost: String(batch.cost ?? ""),
   expirationDate: batch.expirationDate || "",
+  originalExpirationDate: batch.expirationDate || "",
+  entryDate: batch.entryDate || "",
   reason: "",
   lockItem: true,
 });

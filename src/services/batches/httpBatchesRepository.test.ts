@@ -102,6 +102,8 @@ describe("httpBatchesRepository", () => {
     );
 
     const updated = await httpBatchesRepository.update(RAW_BATCH._id, {
+      batchNumber: "  LOT-CORREGIDO  ",
+      supplierId: null,
       quantity: 8,
       cost: 45.5,
       expirationDate: "2026-12-31",
@@ -112,6 +114,8 @@ describe("httpBatchesRepository", () => {
     expect(url).toMatch(new RegExp(`/batches/${RAW_BATCH._id}$`));
     expect(options.method).toBe("PATCH");
     expect(JSON.parse(options.body)).toEqual({
+      batchNumber: "LOT-CORREGIDO",
+      supplierId: null,
       quantity: 8,
       cost: 45.5,
       expirationDate: "2026-12-31",

@@ -162,6 +162,16 @@ describe("validaciones de lotes", () => {
       ),
     ).toBeNull();
   });
+
+  it("rechaza fecha de caducidad anterior a la fecha de ingreso", () => {
+    expect(
+      validateUpdateBatchInput(
+        { expirationDate: "2026-11-20" },
+        10,
+        "2026-11-23",
+      ),
+    ).toMatch(/ingreso/i);
+  });
 });
 
 describe("useBatches", () => {

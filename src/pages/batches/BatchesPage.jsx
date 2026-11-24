@@ -82,15 +82,41 @@ export function BatchesPage({ preselectedItemId }) {
           form.originalQuantity !== ""
             ? Number(form.originalQuantity)
             : undefined;
+        const hasConsumption =
+          form.initialQuantity !== "" &&
+          previousQty !== undefined &&
+          previousQty < Number(form.initialQuantity);
+
+        const patchPayload = {};
+        if (!hasConsumption) {
+          if (
+            (form.batchNumber || "").trim() !==
+            (form.originalBatchNumber || "").trim()
+          ) {
+            patchPayload.batchNumber = (form.batchNumber || "").trim();
+          }
+          if ((form.supplierId || "") !== (form.originalSupplierId || "")) {
+            patchPayload.supplierId = form.supplierId || null;
+          }
+          if (Number(form.cost) !== Number(form.originalCost)) {
+            patchPayload.cost = Number(form.cost);
+          }
+        }
+        if (Number(form.quantity) !== Number(form.originalQuantity)) {
+          patchPayload.quantity = Number(form.quantity);
+          if (form.reason?.trim()) {
+            patchPayload.reason = form.reason.trim();
+          }
+        }
+        if (form.expirationDate !== form.originalExpirationDate) {
+          patchPayload.expirationDate = form.expirationDate;
+        }
+
         await updateBatch(
           form.id,
-          {
-            quantity: Number(form.quantity),
-            cost: Number(form.cost),
-            expirationDate: form.expirationDate,
-            reason: form.reason?.trim() || undefined,
-          },
+          patchPayload,
           previousQty,
+          form.entryDate || undefined,
         );
       } else {
         const targetItemId = form.itemId || items[0]?.id || "";

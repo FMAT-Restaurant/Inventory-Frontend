@@ -112,6 +112,12 @@ export const httpBatchesRepository: BatchesRepository = {
 
   async update(id: string, input: UpdateBatchInput) {
     const payload: Record<string, unknown> = {};
+    if (input.batchNumber !== undefined && input.batchNumber.trim()) {
+      payload.batchNumber = input.batchNumber.trim();
+    }
+    if (input.supplierId !== undefined) {
+      payload.supplierId = input.supplierId || null;
+    }
     if (input.quantity !== undefined) payload.quantity = Number(input.quantity);
     if (input.cost !== undefined) payload.cost = Number(input.cost);
     if (input.expirationDate !== undefined) {

@@ -27,6 +27,8 @@ export interface CreateBatchInput {
 }
 
 export interface UpdateBatchInput {
+  batchNumber?: string;
+  supplierId?: string | null;
   quantity?: number;
   cost?: number;
   expirationDate?: string;
