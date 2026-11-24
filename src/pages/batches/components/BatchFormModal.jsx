@@ -2,6 +2,12 @@ import { Button } from "../../../components/ui/Button.jsx";
 import { Input, Select } from "../../../components/ui/Input.jsx";
 import { Modal } from "../../../components/ui/Modal.jsx";
 import { assignedInactiveOption } from "../../../services/suppliers/labels";
+import { isExpiredDateInput } from "../constants.js";
+
+function supplierNameById(id, list) {
+  if (!id) return "Sin proveedor";
+  return list.find((s) => s.id === id)?.name ?? id;
+}
 
 export function BatchFormModal({
   isOpen,
@@ -16,10 +22,68 @@ export function BatchFormModal({
   onSubmit,
 }) {
   const isEditing = Boolean(values.id);
-  // El proveedor que ya tiene el lote se sigue mostrando aunque esté dado de
-  // baja; no se sustituye por otro.
   const inactiveOption = assignedInactiveOption(values.supplierId, allSuppliers);
   const selectedItem = items.find((item) => item.id === values.itemId);
+  const isPerishable = selectedItem ? Boolean(selectedItem.isPerishable) : true;
+  const unit = selectedItem?.unit ?? "";
+  const isExpiredDate = !isEditing && isExpiredDateInput(values.expirationDate);
+
+  const hasConsumption =
+    isEditing &&
+    values.initialQuantity !== "" &&
+    values.originalQuantity !== "" &&
+    Number(values.originalQuantity) < Number(values.initialQuantity);
+
+  const quantityChanged =
+    isEditing &&
+    values.originalQuantity !== "" &&
+    Number(values.quantity) !== Number(values.originalQuantity);
+
+  const quantityDelta = quantityChanged
+    ? Math.round(
+        (Number(values.quantity) - Number(values.originalQuantity)) * 1000,
+      ) / 1000
+    : 0;
+
+  const changes = [];
+  if (isEditing) {
+    if ((values.supplierId || "") !== (values.originalSupplierId || "")) {
+      changes.push(
+        `Proveedor: ${supplierNameById(values.originalSupplierId, allSuppliers)} → ${supplierNameById(values.supplierId, allSuppliers)}`,
+      );
+    }
+    if (
+      (values.batchNumber || "").trim() !==
+      (values.originalBatchNumber || "").trim()
+    ) {
+      changes.push(
+        `Lote: ${values.originalBatchNumber} → ${(values.batchNumber || "").trim()}`,
+      );
+    }
+    if (quantityChanged) {
+      const sign = quantityDelta > 0 ? "+" : "";
+      changes.push(
+        `Cantidad: ${values.originalQuantity} → ${values.quantity} ${unit} (${sign}${quantityDelta} ${unit})`.trim(),
+      );
+    }
+    if (
+      values.originalCost !== "" &&
+      Number(values.cost) !== Number(values.originalCost)
+    ) {
+      changes.push(
+        `Costo: $${Number(values.originalCost).toFixed(2)} → $${Number(values.cost).toFixed(2)}`,
+      );
+    }
+    if (
+      (values.expirationDate || "") !== (values.originalExpirationDate || "")
+    ) {
+      changes.push(
+        `Caducidad: ${values.originalExpirationDate || "Sin caducidad"} → ${values.expirationDate || "Sin caducidad"}`,
+      );
+    }
+  }
+
+  const hasChanges = !isEditing || changes.length > 0;
 
   return (
     <Modal
@@ -35,7 +99,7 @@ export function BatchFormModal({
           label="Proveedor"
           value={values.supplierId}
           onChange={(e) => onChange("supplierId", e.target.value)}
-          disabled={isEditing}
+          disabled={hasConsumption}
         >
           <option value="">Sin proveedor específico</option>
           {inactiveOption && (
@@ -79,7 +143,7 @@ export function BatchFormModal({
           placeholder="Ej. LOTE-2026-001 (si se omite, se genera automáticamente)"
           value={values.batchNumber}
           onChange={(e) => onChange("batchNumber", e.target.value)}
-          disabled={isEditing}
+          disabled={hasConsumption}
         />
 
         <div
@@ -98,27 +162,92 @@ export function BatchFormModal({
             value={values.quantity}
             onChange={(e) => onChange("quantity", e.target.value)}
             required
+            helperText={
+              quantityChanged
+                ? `Ajuste: ${quantityDelta > 0 ? "+" : ""}${quantityDelta}${unit ? ` ${unit}` : ""}`
+                : undefined
+            }
           />
           <Input
             label="Costo unitario ($)"
             type="number"
             step="0.01"
-            min="0"
+            min="0.01"
             placeholder="Ej. 45.00"
             value={values.cost}
             onChange={(e) => onChange("cost", e.target.value)}
+            disabled={hasConsumption}
             required
           />
         </div>
 
+        {quantityChanged && (
+          <Input
+            label="Motivo del ajuste"
+            type="text"
+            placeholder="Ej. Corrección por conteo físico"
+            value={values.reason || ""}
+            onChange={(e) => onChange("reason", e.target.value)}
+            required
+            helperText="Se guardará en la bitácora de movimientos para auditoría."
+          />
+        )}
+
         <Input
-          label="Fecha de caducidad"
+          label={
+            isPerishable
+              ? "Fecha de caducidad"
+              : "Fecha de caducidad (opcional)"
+          }
           type="date"
+          min={isEditing && values.entryDate ? values.entryDate : undefined}
           value={values.expirationDate}
           onChange={(e) => onChange("expirationDate", e.target.value)}
-          required
-          helperText="Se registrará el lote con esta fecha de caducidad."
+          required={isPerishable}
+          helperText={
+            !isPerishable
+              ? "Insumo no perecedero; puedes dejar este campo vacío."
+              : isEditing
+                ? "Cambiar la fecha modifica el orden de uso FEFO."
+                : "Se registrará el lote con esta fecha de caducidad."
+          }
         />
+
+        {isExpiredDate && (
+          <div
+            style={{
+              padding: "10px 12px",
+              borderRadius: "var(--radius-control)",
+              backgroundColor: "var(--bg-warning, #FEF3C7)",
+              color: "var(--color-warning, #92400E)",
+              fontSize: "var(--caption-size)",
+              lineHeight: 1.4,
+            }}
+          >
+            La fecha seleccionada ya venció. Este lote se registrará como{" "}
+            <strong>CADUCADO</strong> (ej. por hallazgo en conteo físico) y{" "}
+            <strong>no sumará</strong> a la existencia disponible.
+          </div>
+        )}
+
+        {isEditing && changes.length > 0 && (
+          <div
+            style={{
+              padding: "10px 12px",
+              borderRadius: "var(--radius-control)",
+              backgroundColor: "#F8FAFC",
+              border: "1px solid var(--color-border)",
+              fontSize: "var(--caption-size)",
+              color: "var(--color-text)",
+              lineHeight: 1.45,
+            }}
+          >
+            <strong style={{ display: "block", marginBottom: "4px" }}>
+              Resumen de cambios:
+            </strong>
+            <span>{changes.join(" | ")}</span>
+          </div>
+        )}
 
         {error && (
           <span
@@ -143,12 +272,18 @@ export function BatchFormModal({
           <Button variant="tertiary" onClick={onClose} disabled={saving}>
             Cancelar
           </Button>
-          <Button variant="primary" type="submit" disabled={saving}>
+          <Button
+            variant="primary"
+            type="submit"
+            disabled={saving || !hasChanges}
+          >
             {saving
               ? "Guardando..."
               : isEditing
                 ? "Guardar cambios"
-                : "Guardar compra"}
+                : isExpiredDate
+                  ? "Registrar lote vencido"
+                  : "Guardar compra"}
           </Button>
         </div>
       </form>

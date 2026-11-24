@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card } from "../../../components/ui/Card.jsx";
 import { Badge } from "../../../components/ui/Badge.jsx";
 import { Button } from "../../../components/ui/Button.jsx";
@@ -7,6 +8,7 @@ import { PERMISSIONS } from "../../../config/permissions";
 import {
   batchStatusLabel,
   batchStatusVariant,
+  formatFullBatchNumber,
   itemStatusLabel,
   itemStatusVariant,
 } from "../constants.js";
@@ -22,18 +24,30 @@ export function BatchItemCard({
   onToggleExpand,
   onNewPurchase,
   onEditBatch,
+  onWriteOffExpiredBatch,
   onDeleteBatch,
   disabled = false,
 }) {
+  const [showDepleted, setShowDepleted] = useState(false);
+
+  const operationalBatches = batches.filter((b) => b.status !== "depleted");
+  const depletedBatches = batches.filter((b) => b.status === "depleted");
+  const visibleBatches = showDepleted
+    ? [...operationalBatches, ...depletedBatches]
+    : operationalBatches;
+
   // El lote de uso prioritario es el primero utilizable por fecha de
   // vencimiento; los caducados o agotados que lo preceden no cuentan.
-  const priorityBatchId = batches.find(isUsableBatch)?.id;
+  const priorityBatchId = operationalBatches.find(isUsableBatch)?.id;
+  const expiredQuantity = operationalBatches
+    .filter((b) => b.status === "expired" && Number(b.quantity) > 0)
+    .reduce((sum, b) => sum + Number(b.quantity), 0);
 
   const { can } = useAuth();
   const canWrite = can(PERMISSIONS.BATCHES_WRITE);
 
   return (
-    <Card padding="20px">
+    <Card className="batch-item-card" padding="20px">
       <div
         style={{
           display: "flex",
@@ -55,6 +69,21 @@ export function BatchItemCard({
             <h3 style={{ fontSize: "var(--h3-size)", overflowWrap: "anywhere" }}>
               {item.name}
             </h3>
+            {item.sku && (
+              <span
+                style={{
+                  fontSize: "var(--caption-size)",
+                  fontFamily: "monospace",
+                  backgroundColor: "#EEF2FF",
+                  padding: "2px 8px",
+                  borderRadius: "4px",
+                  color: "#3730A3",
+                  fontWeight: 600,
+                }}
+              >
+                {item.sku}
+              </span>
+            )}
             <span
               style={{
                 fontSize: "var(--caption-size)",
@@ -70,6 +99,11 @@ export function BatchItemCard({
             <Badge variant={itemStatusVariant(item.status)}>
               {itemStatusLabel(item.status)}
             </Badge>
+            {expiredQuantity > 0 && (
+              <Badge variant="danger">
+                Caducado: {expiredQuantity} {item.unit}
+              </Badge>
+            )}
           </div>
 
           <div
@@ -108,12 +142,22 @@ export function BatchItemCard({
                 {item.totalStock} {item.unit}
               </strong>
             </div>
+            {item.minStock !== undefined && (
+              <div>
+                <span style={{ color: "var(--color-muted)" }}>
+                  Umbral mínimo:{" "}
+                </span>
+                <strong>
+                  {item.minStock} {item.unit}
+                </strong>
+              </div>
+            )}
           </div>
         </div>
 
         <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
           <Button variant="tertiary" size="sm" onClick={onToggleExpand}>
-            <span>Lotes ({batches.length})</span>
+            <span>Lotes ({operationalBatches.length})</span>
             <ChevronDownIcon
               size={14}
               style={{
@@ -150,6 +194,9 @@ export function BatchItemCard({
             style={{
               display: "flex",
               justifyContent: "space-between",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: "8px",
               marginBottom: "10px",
             }}
           >
@@ -161,25 +208,52 @@ export function BatchItemCard({
                 textTransform: "uppercase",
               }}
             >
-              Lotes registrados (ordenados por fecha de vencimiento)
+              Lotes vigentes y pendientes (orden FEFO)
             </span>
+            {depletedBatches.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowDepleted((prev) => !prev)}
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  color: "var(--color-primary)",
+                  fontSize: "var(--caption-size)",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  padding: "2px 4px",
+                }}
+              >
+                {showDepleted
+                  ? `Ocultar agotados (${depletedBatches.length})`
+                  : `Mostrar agotados (${depletedBatches.length})`}
+              </button>
+            )}
           </div>
 
-          {batches.length === 0 ? (
+          {visibleBatches.length === 0 ? (
             <p
               style={{
                 fontSize: "var(--small-size)",
                 color: "var(--color-muted)",
               }}
             >
-              No hay lotes registrados.
+              No hay lotes vigentes registrados.
             </p>
           ) : (
             <div
               style={{ display: "flex", flexDirection: "column", gap: "8px" }}
             >
-              {batches.map((lote) => {
+              {visibleBatches.map((lote) => {
                 const esPrioridad = lote.id === priorityBatchId;
+                const isDepleted = lote.status === "depleted";
+                const isExpired = lote.status === "expired";
+                const hasConsumption =
+                  Number(lote.quantity) < Number(lote.initialQuantity);
+                const fullCode = formatFullBatchNumber(
+                  lote.batchNumber,
+                  item.sku,
+                );
 
                 return (
                   <div
@@ -206,14 +280,20 @@ export function BatchItemCard({
                       }}
                     >
                       <strong style={{ color: "var(--color-ink)" }}>
-                        {lote.batchNumber}
+                        {fullCode}
                       </strong>
-                      <span>
-                        Vence:{" "}
-                        <strong style={{ color: "var(--color-ink)" }}>
-                          {lote.expirationDate}
-                        </strong>
-                      </span>
+                      {lote.expirationDate ? (
+                        <span>
+                          Vence:{" "}
+                          <strong style={{ color: "var(--color-ink)" }}>
+                            {lote.expirationDate}
+                          </strong>
+                        </span>
+                      ) : (
+                        <span style={{ color: "var(--color-muted)" }}>
+                          Sin caducidad
+                        </span>
+                      )}
                       {lote.entryDate && (
                         <span style={{ color: "var(--color-muted)" }}>
                           Ingreso: {lote.entryDate}
@@ -253,7 +333,17 @@ export function BatchItemCard({
                           Prioridad de uso
                         </span>
                       )}
-                      {canWrite && (
+                      {canWrite && isExpired && Number(lote.quantity) > 0 && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => onWriteOffExpiredBatch?.(lote)}
+                          disabled={disabled}
+                        >
+                          Dar de baja
+                        </Button>
+                      )}
+                      {canWrite && !isExpired && !isDepleted && (
                         <>
                           <Button
                             variant="tertiary"
@@ -267,7 +357,12 @@ export function BatchItemCard({
                             variant="tertiary"
                             size="sm"
                             onClick={() => onDeleteBatch(lote)}
-                            disabled={disabled}
+                            disabled={disabled || hasConsumption}
+                            title={
+                              hasConsumption
+                                ? "No se puede eliminar un lote que ya registra consumo o movimientos"
+                                : "Eliminar lote"
+                            }
                           >
                             Eliminar
                           </Button>

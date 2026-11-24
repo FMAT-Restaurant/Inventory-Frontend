@@ -10,11 +10,15 @@ import type { Batch, CreateBatchInput, UpdateBatchInput } from "../../../service
 export interface BatchFilters {
   search: string;
   status: string;
+  category: string;
+  batchCondition: string;
 }
 
-const INITIAL_FILTERS: BatchFilters = {
+export const INITIAL_BATCH_FILTERS: BatchFilters = {
   search: "",
   status: "TODOS",
+  category: "TODAS",
+  batchCondition: "TODOS",
 };
 
 /** Tamaño de página por defecto para el listado de insumos con lotes. */
@@ -22,6 +26,7 @@ export const DEFAULT_BATCHES_ITEMS_LIMIT = 20;
 
 export function validateCreateBatchInput(
   input: CreateBatchInput,
+  isPerishable = true,
 ): string | null {
   if (!input.itemId) {
     return "Selecciona el insumo a reabastecer.";
@@ -29,10 +34,10 @@ export function validateCreateBatchInput(
   if (Number.isNaN(Number(input.quantity)) || Number(input.quantity) <= 0) {
     return "La cantidad comprada debe ser mayor a 0.";
   }
-  if (Number.isNaN(Number(input.cost)) || Number(input.cost) < 0) {
-    return "El costo unitario debe ser 0 o mayor.";
+  if (Number.isNaN(Number(input.cost)) || Number(input.cost) <= 0) {
+    return "El costo unitario debe ser mayor a 0.";
   }
-  if (!input.expirationDate) {
+  if (isPerishable && !input.expirationDate) {
     return "Selecciona la fecha de caducidad.";
   }
   return null;
@@ -40,6 +45,9 @@ export function validateCreateBatchInput(
 
 export function validateUpdateBatchInput(
   input: UpdateBatchInput,
+  previousQuantity?: number,
+  entryDate?: string,
+  isPerishable = true,
 ): string | null {
   if (
     input.quantity !== undefined &&
@@ -49,12 +57,27 @@ export function validateUpdateBatchInput(
   }
   if (
     input.cost !== undefined &&
-    (Number.isNaN(Number(input.cost)) || Number(input.cost) < 0)
+    (Number.isNaN(Number(input.cost)) || Number(input.cost) <= 0)
   ) {
-    return "El costo unitario debe ser 0 o mayor.";
+    return "El costo unitario debe ser mayor a 0.";
   }
-  if (input.expirationDate !== undefined && !input.expirationDate) {
+  if (isPerishable && input.expirationDate !== undefined && !input.expirationDate) {
     return "Selecciona la fecha de caducidad.";
+  }
+  if (
+    entryDate &&
+    input.expirationDate &&
+    input.expirationDate < entryDate
+  ) {
+    return "La fecha de caducidad no puede ser anterior a la fecha de ingreso.";
+  }
+  if (
+    previousQuantity !== undefined &&
+    input.quantity !== undefined &&
+    Number(input.quantity) !== Number(previousQuantity) &&
+    (!input.reason || !input.reason.trim())
+  ) {
+    return "Indica el motivo del ajuste al modificar la cantidad del lote.";
   }
   return null;
 }
@@ -79,7 +102,7 @@ export function useBatches() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [filters, setFilters] = useState<BatchFilters>(INITIAL_FILTERS);
+  const [filters, setFilters] = useState<BatchFilters>(INITIAL_BATCH_FILTERS);
 
   // Estado de paginación (sobre items).
   const {
@@ -117,11 +140,13 @@ export function useBatches() {
   // Catálogo de lotes + proveedores: se carga al montar y cuando se invalida.
   const reloadCatalog = useCallback(async () => {
     try {
+      // Toleramos que el usuario tenga BATCHES_READ sin SUPPLIERS_READ
+      // para que un 403 en proveedores no bloquee toda la gestión de lotes.
       const [batchList, supplierList] = await Promise.all([
         fetchAllPages((p, l) => batchesRepository.list({ page: p, limit: l })),
         fetchAllPages((p, l) =>
           itemsRepository.listSuppliers({ page: p, limit: l }),
-        ),
+        ).catch(() => [] as Supplier[]),
       ]);
       setBatches(batchList);
       setSuppliers(supplierList);
@@ -154,7 +179,9 @@ export function useBatches() {
 
   const createBatch = useCallback(
     async (input: CreateBatchInput) => {
-      const validationError = validateCreateBatchInput(input);
+      const targetItem = items.find((i) => i.id === input.itemId);
+      const isPerishable = targetItem ? Boolean(targetItem.isPerishable) : true;
+      const validationError = validateCreateBatchInput(input, isPerishable);
       if (validationError) {
         setError(validationError);
         throw new Error(validationError);
@@ -176,12 +203,23 @@ export function useBatches() {
         setSaving(false);
       }
     },
-    [reload],
+    [items, reload],
   );
 
   const updateBatch = useCallback(
-    async (id: string, input: UpdateBatchInput) => {
-      const validationError = validateUpdateBatchInput(input);
+    async (
+      id: string,
+      input: UpdateBatchInput,
+      previousQuantity?: number,
+      entryDate?: string,
+      isPerishable = true,
+    ) => {
+      const validationError = validateUpdateBatchInput(
+        input,
+        previousQuantity,
+        entryDate,
+        isPerishable,
+      );
       if (validationError) {
         setError(validationError);
         throw new Error(validationError);
@@ -196,6 +234,32 @@ export function useBatches() {
         return updated;
       } catch (err) {
         setError(errorMessage(err, "No se pudo actualizar el lote."));
+        throw err;
+      } finally {
+        setSaving(false);
+      }
+    },
+    [reload],
+  );
+
+  const writeOffExpiredBatch = useCallback(
+    async (id: string, reason = "Baja por caducidad de lote") => {
+      setSaving(true);
+      setError(null);
+      try {
+        const updated = await batchesRepository.update(id, {
+          quantity: 0,
+          reason,
+        });
+        setMessage(
+          `Baja por caducidad registrada: el lote "${updated.batchNumber}" quedó con saldo 0.`,
+        );
+        await reload();
+        return updated;
+      } catch (err) {
+        setError(
+          errorMessage(err, "No se pudo dar de baja el lote caducado."),
+        );
         throw err;
       } finally {
         setSaving(false);
@@ -244,11 +308,19 @@ export function useBatches() {
     [resetPage],
   );
 
-  /** El filtro por status se mantiene en memoria sobre la página actual. */
-  const filteredItems = useMemo(() => {
-    if (filters.status === "TODOS") return items;
-    return items.filter((item) => item.status === filters.status);
-  }, [items, filters.status]);
+  const resetFilters = useCallback(() => {
+    resetPage();
+    setFilters(INITIAL_BATCH_FILTERS);
+  }, [resetPage]);
+
+  const hasActiveFilters = useMemo(
+    () =>
+      filters.search.trim() !== "" ||
+      filters.status !== "TODOS" ||
+      filters.category !== "TODAS" ||
+      filters.batchCondition !== "TODOS",
+    [filters],
+  );
 
   const batchesByItemId = useMemo(() => {
     const map = new Map<string, Batch[]>();
@@ -258,15 +330,83 @@ export function useBatches() {
       map.set(batch.itemId, current);
     }
     for (const [itemId, list] of map.entries()) {
-      list.sort(
-        (a, b) =>
-          new Date(a.expirationDate).getTime() -
-          new Date(b.expirationDate).getTime(),
-      );
+      list.sort((a, b) => {
+        const aTime = a.expirationDate
+          ? new Date(a.expirationDate).getTime()
+          : Number.POSITIVE_INFINITY;
+        const bTime = b.expirationDate
+          ? new Date(b.expirationDate).getTime()
+          : Number.POSITIVE_INFINITY;
+        if (aTime !== bTime) return aTime - bTime;
+        return (a.entryDate || "").localeCompare(b.entryDate || "");
+      });
       map.set(itemId, list);
     }
     return map;
   }, [batches]);
+
+  const categories = useMemo(() => {
+    const unique = new Set<string>();
+    for (const item of items) {
+      const cat = (item.category || "").trim();
+      if (cat) unique.add(cat);
+    }
+    return Array.from(unique).sort((a, b) => a.localeCompare(b, "es"));
+  }, [items]);
+
+  const filteredItems = useMemo(() => {
+    const search = filters.search.trim().toLowerCase();
+    return items.filter((item) => {
+      const itemBatches = batchesByItemId.get(item.id) ?? [];
+
+      const name = (item.name || "").toLowerCase();
+      const category = (item.category || "").toLowerCase();
+      const sku = (item.sku || "").toLowerCase();
+      const matchesBatchCode = itemBatches.some((b) =>
+        (b.batchNumber || "").toLowerCase().includes(search),
+      );
+      const matchesSearch =
+        search === "" ||
+        name.includes(search) ||
+        category.includes(search) ||
+        sku.includes(search) ||
+        matchesBatchCode;
+
+      if (!matchesSearch) return false;
+
+      if (
+        filters.category !== "TODAS" &&
+        (item.category || "").trim() !== filters.category
+      ) {
+        return false;
+      }
+
+      if (filters.status !== "TODOS" && item.status !== filters.status) {
+        return false;
+      }
+
+      if (filters.batchCondition === "CON_CADUCADOS") {
+        return itemBatches.some(
+          (b) => b.status === "expired" && Number(b.quantity) > 0,
+        );
+      }
+      if (filters.batchCondition === "VENCE_HOY") {
+        return itemBatches.some(
+          (b) => b.status === "expires_today" && Number(b.quantity) > 0,
+        );
+      }
+      if (filters.batchCondition === "SOLO_ACTIVOS") {
+        return itemBatches.some(
+          (b) => b.status === "active" && Number(b.quantity) > 0,
+        );
+      }
+      if (filters.batchCondition === "SIN_LOTES") {
+        return itemBatches.length === 0;
+      }
+
+      return true;
+    });
+  }, [items, filters, batchesByItemId]);
 
   // Solo los activos pueden asignarse a un lote o insumo nuevo.
   const suppliers = useMemo(
@@ -280,9 +420,12 @@ export function useBatches() {
     batchesByItemId,
     suppliers,
     allSuppliers,
+    categories,
     filteredItems,
     filters,
+    hasActiveFilters,
     updateFilters,
+    resetFilters,
     loading,
     saving,
     error,
@@ -291,6 +434,7 @@ export function useBatches() {
     reload,
     createBatch,
     updateBatch,
+    writeOffExpiredBatch,
     removeBatch,
     // Paginación: propagar con {...pagination} a <PaginationBar />
     pagination,

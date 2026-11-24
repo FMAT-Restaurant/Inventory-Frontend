@@ -25,13 +25,16 @@ export interface CreateBatchInput {
   supplierId?: string | null;
   quantity: number;
   cost: number;
-  expirationDate: string;
+  expirationDate?: string | null;
 }
 
 export interface UpdateBatchInput {
+  batchNumber?: string;
+  supplierId?: string | null;
   quantity?: number;
   cost?: number;
-  expirationDate?: string;
+  expirationDate?: string | null;
+  reason?: string;
 }
 
 /** Parámetros de listado de lotes. */

@@ -14,9 +14,12 @@ export function BatchesPage({ preselectedItemId }) {
     batchesByItemId,
     suppliers,
     allSuppliers,
+    categories,
     filteredItems,
     filters,
+    hasActiveFilters,
     updateFilters,
+    resetFilters,
     loading,
     saving,
     error,
@@ -24,6 +27,7 @@ export function BatchesPage({ preselectedItemId }) {
     clearMessage,
     createBatch,
     updateBatch,
+    writeOffExpiredBatch,
     removeBatch,
     pagination,
   } = useBatches();
@@ -32,6 +36,7 @@ export function BatchesPage({ preselectedItemId }) {
   const [form, setForm] = useState(emptyBatchForm());
   const [expandedBatches, setExpandedBatches] = useState({});
   const [batchToDelete, setBatchToDelete] = useState(null);
+  const [batchToWriteOff, setBatchToWriteOff] = useState(null);
 
   const toggleExpand = (itemId) => {
     setExpandedBatches((prev) => ({
@@ -75,11 +80,50 @@ export function BatchesPage({ preselectedItemId }) {
     event.preventDefault();
     try {
       if (form.id) {
-        await updateBatch(form.id, {
-          quantity: Number(form.quantity),
-          cost: Number(form.cost),
-          expirationDate: form.expirationDate,
-        });
+        const previousQty =
+          form.originalQuantity !== ""
+            ? Number(form.originalQuantity)
+            : undefined;
+        const hasConsumption =
+          form.initialQuantity !== "" &&
+          previousQty !== undefined &&
+          previousQty < Number(form.initialQuantity);
+
+        const patchPayload = {};
+        if (!hasConsumption) {
+          if (
+            (form.batchNumber || "").trim() !==
+            (form.originalBatchNumber || "").trim()
+          ) {
+            patchPayload.batchNumber = (form.batchNumber || "").trim();
+          }
+          if ((form.supplierId || "") !== (form.originalSupplierId || "")) {
+            patchPayload.supplierId = form.supplierId || null;
+          }
+          if (Number(form.cost) !== Number(form.originalCost)) {
+            patchPayload.cost = Number(form.cost);
+          }
+        }
+        if (Number(form.quantity) !== Number(form.originalQuantity)) {
+          patchPayload.quantity = Number(form.quantity);
+          if (form.reason?.trim()) {
+            patchPayload.reason = form.reason.trim();
+          }
+        }
+        if ((form.expirationDate || "") !== (form.originalExpirationDate || "")) {
+          patchPayload.expirationDate = form.expirationDate || null;
+        }
+
+        const targetItem = items.find((i) => i.id === form.itemId);
+        const isPerishable = targetItem ? Boolean(targetItem.isPerishable) : true;
+
+        await updateBatch(
+          form.id,
+          patchPayload,
+          previousQty,
+          form.entryDate || undefined,
+          isPerishable,
+        );
       } else {
         const targetItemId = form.itemId || items[0]?.id || "";
         await createBatch({
@@ -88,7 +132,7 @@ export function BatchesPage({ preselectedItemId }) {
           supplierId: form.supplierId || null,
           quantity: Number(form.quantity),
           cost: Number(form.cost),
-          expirationDate: form.expirationDate,
+          expirationDate: form.expirationDate || null,
         });
         // Expandir automáticamente los lotes del insumo al que se le registró compra
         if (targetItemId) {
@@ -126,6 +170,30 @@ export function BatchesPage({ preselectedItemId }) {
     }
   };
 
+  const requestWriteOffBatch = (batch) => {
+    clearMessage();
+    setBatchToWriteOff(batch);
+  };
+
+  const closeWriteOffModal = () => {
+    if (saving) return;
+    setBatchToWriteOff(null);
+  };
+
+  const handleConfirmWriteOff = async () => {
+    if (!batchToWriteOff) return;
+    try {
+      await writeOffExpiredBatch(
+        batchToWriteOff.id,
+        "Baja por caducidad de lote",
+      );
+    } catch {
+      // El hook expone el error en el banner.
+    } finally {
+      setBatchToWriteOff(null);
+    }
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       {!modalOpen && (error || message) && (
@@ -146,8 +214,19 @@ export function BatchesPage({ preselectedItemId }) {
       <BatchesToolbar
         search={filters.search}
         statusFilter={filters.status}
+        categoryFilter={filters.category}
+        batchConditionFilter={filters.batchCondition}
+        categories={categories}
+        hasActiveFilters={hasActiveFilters}
+        totalCount={items.length}
+        filteredCount={filteredItems.length}
         onSearch={(value) => updateFilters({ search: value })}
         onStatusChange={(value) => updateFilters({ status: value })}
+        onCategoryChange={(value) => updateFilters({ category: value })}
+        onBatchConditionChange={(value) =>
+          updateFilters({ batchCondition: value })
+        }
+        onResetFilters={resetFilters}
         onNewPurchase={openCreateGeneral}
         disabled={loading}
       />
@@ -158,7 +237,7 @@ export function BatchesPage({ preselectedItemId }) {
         filteredCount={filteredItems.length}
         emptyState={<BatchesEmptyState />}
         loadingState={<BatchesEmptyState loading />}
-        noMatchesMessage="Ningún insumo de esta página coincide con el filtro de estado. Prueba otra página o ajusta el filtro."
+        noMatchesMessage="Ningún insumo de esta página coincide con los filtros activos. Prueba otra página o limpia los filtros."
         pagination={pagination}
         paginationDisabled={loading || saving}
         paginationLabel="insumos"
@@ -177,6 +256,7 @@ export function BatchesPage({ preselectedItemId }) {
               onToggleExpand={() => toggleExpand(item.id)}
               onNewPurchase={() => openCreateForItem(item.id)}
               onEditBatch={openEditBatch}
+              onWriteOffExpiredBatch={requestWriteOffBatch}
               onDeleteBatch={requestDeleteBatch}
               disabled={saving}
             />
@@ -208,6 +288,22 @@ export function BatchesPage({ preselectedItemId }) {
             : ""
         }
         confirmLabel="Eliminar lote"
+        cancelLabel="Cancelar"
+        variant="destructive"
+        loading={saving}
+      />
+
+      <ConfirmModal
+        isOpen={Boolean(batchToWriteOff)}
+        onClose={closeWriteOffModal}
+        onConfirm={handleConfirmWriteOff}
+        title="Dar de baja lote caducado"
+        message={
+          batchToWriteOff
+            ? `El lote "${batchToWriteOff.batchNumber}" quedará con cantidad 0 y estado AGOTADO conservando su registro de trazabilidad.`
+            : ""
+        }
+        confirmLabel="Confirmar baja"
         cancelLabel="Cancelar"
         variant="destructive"
         loading={saving}
